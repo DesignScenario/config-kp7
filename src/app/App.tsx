@@ -1,35 +1,41 @@
 import { useState, useEffect, useRef } from 'react';
 import { ImageWithFallback } from './components/ImageWithFallback';
-import MenuDeContextoCrLumiRf from '../imports/MenuDeContextoCrLumiRf/MenuDeContextoCrLumiRf';
-import MenuDeContextoDesvincular from '../imports/MenuDeContextoDesvincular/MenuDeContextoDesvincular';
-import MenuDeContextoDesassociar from '../imports/MenuDeContextoDesassociar/MenuDeContextoDesassociar';
 import ProgressiveKp7Discovery from './components/ProgressiveKp7Discovery';
 import ModoTeste from './components/ModoTeste';
+import ContextMenu from './components/ContextMenu';
 
-// Import PNG icons - Taskbar
-import iconInformacoesDoProjeto from '../imports/informa__es-do-projeto.png';
-import iconEstrutura from '../imports/estrutura.png';
-import iconEquipamentos from '../imports/equipamentos.png';
-import iconProgramacao from '../imports/programa__o.png';
-import iconInstalacao from '../imports/instala__o.png';
-import iconGerenciamentoDrivers from '../imports/gerenciamento-de-drivers.png';
-import iconEnviarProjeto from '../imports/enviar-projeto.png';
+// Window chrome (SVGs exported from Figma — Embrace Desktop)
+import iconLogoMercado from '../imports/icons/logo-mercado.svg';
+import iconFechar from '../imports/icons/fechar-16.svg';
+import iconToggleOn from '../imports/icons/toggle-on.svg';
+import iconColapsarExpandir from '../imports/icons/colapsar-expandir.svg';
+import iconCheckboxOff from '../imports/icons/checkbox-off.svg';
+import iconSetaMenuSuspenso from '../imports/icons/seta-menu-suspenso.svg';
 
-// Import PNG icons - Action Menu
-import iconModoProgramacao from '../imports/modo-programação.png';
-import iconModoTeste from '../imports/modo-teste.png';
-import iconZigbee from '../imports/zigbee.png';
-import iconProcurarRedes from '../imports/procurar-redes.png';
-import iconProcurarDispositivos from '../imports/procurar-dispositivos.png';
-import iconAtualizarFirmwares from '../imports/atualizar-firmwares.png';
+// Taskbar icons (32px)
+import iconInformacoesDoProjeto from '../imports/icons/tarefa-informacoes-do-projeto.svg';
+import iconEstrutura from '../imports/icons/tarefa-estrutura.svg';
+import iconEquipamentos from '../imports/icons/tarefa-equipamentos.svg';
+import iconProgramacao from '../imports/icons/tarefa-programacao.svg';
+import iconInstalacao from '../imports/icons/tarefa-instalacao.svg';
+import iconGerenciamentoDrivers from '../imports/icons/tarefa-gerenciamento-de-drivers.svg';
+import iconEnviarProjeto from '../imports/icons/tarefa-enviar-projeto.svg';
 
-// Import PNG icons - Tree Devices
-import iconProjeto from '../imports/projeto.png';
-import iconAmbientes from '../imports/ambientes.png';
-import iconInterfaceComunicacao from '../imports/interface-de-comunicação.png';
-import iconSensores from '../imports/sensores.png';
-import iconKeypad from '../imports/keypad-wifi-2.png';
-import iconPasta from '../imports/pasta.png';
+// Action menu icons (28px)
+import iconModoProgramacao from '../imports/icons/acao-modo-programacao.svg';
+import iconModoTeste from '../imports/icons/acao-modo-teste.svg';
+import iconZigbee from '../imports/icons/acao-zigbee.svg';
+import iconProcurarRedes from '../imports/icons/acao-procurar-redes.svg';
+import iconProcurarDispositivos from '../imports/icons/acao-procurar-dispositivos.svg';
+import iconAtualizarFirmwares from '../imports/icons/acao-atualizar-firmwares.svg';
+
+// Tree icons (16px)
+import iconProjeto from '../imports/icons/arvore-projeto.svg';
+import iconAmbientes from '../imports/icons/arvore-ambientes.svg';
+import iconInterfaceComunicacao from '../imports/icons/arvore-interface-de-comunicacao.svg';
+import iconSensores from '../imports/icons/arvore-sensores.svg';
+import iconKeypad from '../imports/icons/arvore-keypad.svg';
+import iconPasta from '../imports/icons/arvore-pasta.svg';
 
 type DeviceType = 'project' | 'room' | 'interface' | 'sensor' | 'keypad' | 'folder';
 
@@ -49,16 +55,29 @@ export default function App() {
   const [expandedProject, setExpandedProject] = useState<Set<string>>(new Set(['novo-projeto', 'sala-reuniao', 'sala-conferencia', 'escritorio']));
   const [expandedNetwork, setExpandedNetwork] = useState<Set<string>>(new Set(['e-net', 'lan', 'eb-ntl1-net']));
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; deviceId: string; type: 'sensor' | 'project' | 'keypad-network' } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; deviceId: string; type: 'inclusion' | 'project' | 'keypad-network' } | null>(null);
   const [removedNetworkKeypads, setRemovedNetworkKeypads] = useState<Set<string>>(new Set());
   const [showOverlay, setShowOverlay] = useState(false);
   const [rfIncluded, setRfIncluded] = useState(false);
   const [associations, setAssociations] = useState<Record<string, string>>({});
   const [keypadCustomNames, setKeypadCustomNames] = useState<Record<string, string>>({});
+  // Names given to project KP7s by renaming their linked keypad in the CR-KP7-RF window
+  const [projectKp7Names, setProjectKp7Names] = useState<Record<string, string>>({});
   const [draggedDevice, setDraggedDevice] = useState<Device | null>(null);
   const [overlayPos, setOverlayPos] = useState({ x: 100, y: 100 });
   const overlayDragRef = useRef<{ mouseX: number; mouseY: number; overlayX: number; overlayY: number } | null>(null);
   const [pendingOverlayAssociations, setPendingOverlayAssociations] = useState<Record<string, string>>({});
+
+  // Esc closes the context menu, or cancels the inclusion window
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (contextMenu) setContextMenu(null);
+      else if (showOverlay) closeOverlay();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [contextMenu, showOverlay]);
 
   // Close context menu on outside click
   useEffect(() => {
@@ -130,6 +149,8 @@ export default function App() {
     return Object.keys(associations).find(key => associations[key] === projectDeviceId);
   };
 
+  const kp7Name = (id: string, defaultName: string) => `${projectKp7Names[id] ?? defaultName} (CR-KP7-RF)`;
+
   const projectDevices: Device[] = [
     {
       id: 'novo-projeto',
@@ -146,7 +167,7 @@ export default function App() {
             { id: 'eb-ntl1-proj', name: 'EB-NTL1', type: 'interface', isAssociated: true, associatedId: 'eb-ntl1-net' },
             { id: 'sensor-reuniao-1', name: 'Sensor Reunião 1 (CR-LUMI-RF)', type: 'sensor', isAssociated: true, associatedId: 'sensor-reuniao-1-net' },
             { id: 'sensor-reuniao-2', name: 'Sensor Reunião 2 (CR-LUMI-RF)', type: 'sensor', isAssociated: true, associatedId: 'sensor-reuniao-2-net' },
-            { id: 'kp7-reuniao', name: 'KP7 Reunião (CR-KP7-RF)', type: 'keypad', isAssociated: isProjectDeviceAssociated('kp7-reuniao'), associatedId: getNetworkDeviceIdForProject('kp7-reuniao') }
+            { id: 'kp7-reuniao', name: kp7Name('kp7-reuniao', 'KP7 Reunião'), type: 'keypad', isAssociated: isProjectDeviceAssociated('kp7-reuniao'), associatedId: getNetworkDeviceIdForProject('kp7-reuniao') }
           ]
         },
         {
@@ -157,7 +178,7 @@ export default function App() {
           children: [
             { id: 'sensor-conferencia-1', name: 'Sensor Conferência 1 (CR-LUMI-RF)', type: 'sensor', isAssociated: true, associatedId: 'sensor-conferencia-1-net' },
             { id: 'sensor-conferencia-2', name: 'Sensor Conferência 2 (CR-LUMI-RF)', type: 'sensor', isAssociated: true, associatedId: 'sensor-conferencia-2-net' },
-            { id: 'kp7-conferencia', name: 'KP7 Conferência (CR-KP7-RF)', type: 'keypad', isAssociated: isProjectDeviceAssociated('kp7-conferencia'), associatedId: getNetworkDeviceIdForProject('kp7-conferencia') }
+            { id: 'kp7-conferencia', name: kp7Name('kp7-conferencia', 'KP7 Conferência'), type: 'keypad', isAssociated: isProjectDeviceAssociated('kp7-conferencia'), associatedId: getNetworkDeviceIdForProject('kp7-conferencia') }
           ]
         },
         {
@@ -169,9 +190,9 @@ export default function App() {
             { id: 'sensor-desenvolvimento', name: 'Sensor Desenvolvimento (CR-LUMI-RF)', type: 'sensor', isAssociated: true, associatedId: 'sensor-desenvolvimento-net' },
             { id: 'sensor-financeiro', name: 'Sensor Financeiro (CR-LUMI-RF)', type: 'sensor', isAssociated: true, associatedId: 'sensor-financeiro-net' },
             { id: 'sensor-rh', name: 'Sensor RH (CR-LUMI-RF)', type: 'sensor', isAssociated: true, associatedId: 'sensor-rh-net' },
-            { id: 'kp7-desenvolvimento', name: 'KP7 Desenvolvimento (CR-KP7-RF)', type: 'keypad', isAssociated: isProjectDeviceAssociated('kp7-desenvolvimento'), associatedId: getNetworkDeviceIdForProject('kp7-desenvolvimento') },
-            { id: 'kp7-rh', name: 'KP7 RH (CR-KP7-RF)', type: 'keypad', isAssociated: isProjectDeviceAssociated('kp7-rh'), associatedId: getNetworkDeviceIdForProject('kp7-rh') },
-            { id: 'kp7-financeiro', name: 'KP7 Financeiro (CR-KP7-RF)', type: 'keypad', isAssociated: isProjectDeviceAssociated('kp7-financeiro'), associatedId: getNetworkDeviceIdForProject('kp7-financeiro') }
+            { id: 'kp7-desenvolvimento', name: kp7Name('kp7-desenvolvimento', 'KP7 Desenvolvimento'), type: 'keypad', isAssociated: isProjectDeviceAssociated('kp7-desenvolvimento'), associatedId: getNetworkDeviceIdForProject('kp7-desenvolvimento') },
+            { id: 'kp7-rh', name: kp7Name('kp7-rh', 'KP7 RH'), type: 'keypad', isAssociated: isProjectDeviceAssociated('kp7-rh'), associatedId: getNetworkDeviceIdForProject('kp7-rh') },
+            { id: 'kp7-financeiro', name: kp7Name('kp7-financeiro', 'KP7 Financeiro'), type: 'keypad', isAssociated: isProjectDeviceAssociated('kp7-financeiro'), associatedId: getNetworkDeviceIdForProject('kp7-financeiro') }
           ]
         }
       ]
@@ -184,11 +205,15 @@ export default function App() {
     'kp7-desenvolvimento-net': 'Keypad RF 3',
     'kp7-financeiro-net': 'Keypad RF 4',
     'kp7-rh-net': 'Keypad RF 5',
+    'kp7-extra-net': 'Keypad RF 6',
   };
 
   const getDeviceName = (netDeviceId: string, mac: string, baseType: string): string => {
+    // Priority: name typed in the CR-KP7-RF window (also allowed after the link),
+    // then the linked project KP7 name, then the generic "Keypad RF N"
     const customName = keypadCustomNames[netDeviceId]?.trim();
-    const genericName = customName || NETWORK_KEYPAD_GENERIC_NAMES[netDeviceId] || baseType;
+    if (customName) return `${customName} (${baseType}) [${mac}]`;
+    const genericName = NETWORK_KEYPAD_GENERIC_NAMES[netDeviceId] || baseType;
 
     const projectDeviceId = associations[netDeviceId];
     if (projectDeviceId) {
@@ -201,6 +226,9 @@ export default function App() {
 
     return `${genericName} (${baseType}) [${mac}]`;
   };
+
+  const hasProjectKeypad = (devices: Device[]): boolean =>
+    devices.some(d => d.type === 'keypad' || (!!d.children && hasProjectKeypad(d.children)));
 
   const getNetworkDevices = (): Device[] => {
     const baseDevices: Device[] = [
@@ -238,13 +266,15 @@ export default function App() {
       }
     ];
 
-    if (rfIncluded) {
+    // The "Controles CR-KP7-RF" folder is shown whenever the project has at least one KP7;
+    // its keypads only appear after an inclusion ("Concluir" in the CR-KP7-RF window)
+    if (hasProjectKeypad(projectDevices)) {
       baseDevices.push({
         id: 'controles-rf',
-        name: 'CONTROLES RF',
+        name: 'Controles CR-KP7-RF',
         type: 'folder',
         isAssociated: false,
-        children: [
+        children: !rfIncluded ? [] : [
           ...([
             {
               id: 'kp7-reuniao-net',
@@ -285,6 +315,14 @@ export default function App() {
               mac: 'E7:55:B0:19',
               isAssociated: !!associations['kp7-rh-net'],
               associatedId: associations['kp7-rh-net']
+            },
+            {
+              id: 'kp7-extra-net',
+              name: getDeviceName('kp7-extra-net', '09:FE:31:AB', 'CR-KP7-RF'),
+              type: 'keypad' as const,
+              mac: '09:FE:31:AB',
+              isAssociated: !!associations['kp7-extra-net'],
+              associatedId: associations['kp7-extra-net']
             }
           ] as Device[]).filter(kp => !removedNetworkKeypads.has(kp.id))
         ]
@@ -362,14 +400,15 @@ export default function App() {
     e.preventDefault();
     setSelectedId(device.id);
 
-    if (device.type === 'sensor' && !isProjectTree) {
-      const position = getContextMenuPosition(e.clientX, e.clientY, 149, 30);
-      setContextMenu({ x: position.x, y: position.y, deviceId: device.id, type: 'sensor' });
+    // Menu sizes (Figma): 25px item + 4px top/bottom padding; width follows the label
+    if (!isProjectTree && (device.type === 'sensor' || device.id === 'controles-rf')) {
+      const position = getContextMenuPosition(e.clientX, e.clientY, 145, 33);
+      setContextMenu({ x: position.x, y: position.y, deviceId: device.id, type: 'inclusion' });
     } else if (device.type === 'keypad' && isProjectTree && device.isAssociated) {
-      const position = getContextMenuPosition(e.clientX, e.clientY, 200, 25);
+      const position = getContextMenuPosition(e.clientX, e.clientY, 90, 33);
       setContextMenu({ x: position.x, y: position.y, deviceId: device.id, type: 'project' });
     } else if (device.type === 'keypad' && !isProjectTree) {
-      const position = getContextMenuPosition(e.clientX, e.clientY, 78, 30);
+      const position = getContextMenuPosition(e.clientX, e.clientY, 90, 33);
       setContextMenu({ x: position.x, y: position.y, deviceId: device.id, type: 'keypad-network' });
     }
   };
@@ -382,17 +421,38 @@ export default function App() {
         delete next[networkDeviceId];
         return next;
       });
+      // Removing the keypad from the network also forgets its custom name;
+      // a new inclusion (discovery) brings it back as a fresh device.
+      setKeypadCustomNames(prev => {
+        const next = { ...prev };
+        delete next[networkDeviceId];
+        return next;
+      });
       setRemovedNetworkKeypads(prev => new Set([...prev, networkDeviceId]));
+      if (selectedId === networkDeviceId) setSelectedId(null);
     }
     setContextMenu(null);
   };
 
+  const closeOverlay = () => {
+    setShowOverlay(false);
+    setPendingOverlayAssociations({});
+  };
+
+  const changeMode = (mode: 'programacao' | 'teste') => {
+    if (mode !== 'programacao') {
+      closeOverlay();
+      setContextMenu(null);
+    }
+    setCurrentMode(mode);
+  };
+
   const handleContextMenuClick = () => {
-    if (contextMenu?.type === 'sensor') {
+    if (contextMenu?.type === 'inclusion') {
       setContextMenu(null);
       setOverlayPos({
         x: Math.max(0, window.innerWidth / 2 - 325),
-        y: Math.max(0, window.innerHeight / 2 - 300)
+        y: Math.max(0, window.innerHeight / 2 - 325)
       });
       setPendingOverlayAssociations({});
       setShowOverlay(true);
@@ -415,12 +475,28 @@ export default function App() {
     setContextMenu(null);
   };
 
-  const handleConcluir = (overlayAssociations: Record<string, string>) => {
+  const handleConcluir = (overlayAssociations: Record<string, string>, overlayKeypadNames: Record<string, string>) => {
     // Merge overlay associations into main associations
     setAssociations(prev => ({
       ...prev,
       ...overlayAssociations
     }));
+    // Renames made in the window only take effect on "Concluir" (closing with X discards them).
+    // A linked keypad's name is the project KP7's name: renaming it renames the KP7 (project
+    // and network). Free keypads keep the name only as their network device name.
+    const merged = { ...associations, ...overlayAssociations };
+    const networkNames: Record<string, string> = {};
+    const kp7Renames: Record<string, string> = {};
+    for (const [networkId, name] of Object.entries(overlayKeypadNames)) {
+      const projectId = merged[networkId];
+      if (!projectId) networkNames[networkId] = name;
+      else if (name.trim()) kp7Renames[projectId] = name.trim();
+    }
+    setKeypadCustomNames(networkNames);
+    setProjectKp7Names(prev => ({ ...prev, ...kp7Renames }));
+    // Every keypad found by the discovery is (re)included in the network,
+    // including ones previously removed with "Desassociar"
+    setRemovedNetworkKeypads(new Set());
     setPendingOverlayAssociations({});
     setRfIncluded(true);
     setShowOverlay(false);
@@ -437,6 +513,9 @@ export default function App() {
     }
   };
 
+  // Drag ended anywhere (including outside a valid target): forget the dragged device
+  const handleDragEnd = () => setDraggedDevice(null);
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
   };
@@ -447,47 +526,42 @@ export default function App() {
         ...prev,
         [targetDevice.id]: draggedDevice.id
       }));
+      // A newly linked keypad takes the KP7 name (it can be renamed later in the CR-KP7-RF window)
+      setKeypadCustomNames(prev => {
+        const next = { ...prev };
+        delete next[targetDevice.id];
+        return next;
+      });
     }
     setDraggedDevice(null);
   };
 
   return (
     <div className="h-screen flex flex-col bg-white font-['Segoe_UI',sans-serif]">
-      {/* Top Bar */}
-      <div className="bg-[#f3f3f3] h-[23px] px-2 flex items-center justify-between border-b border-[#cfcfcf]">
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 bg-gradient-to-br from-white to-[#c5c5c4] rounded-[3.5px] border border-[#b8b6b6] flex items-center justify-center">
-            <span className="text-[#d9992c] text-[6px] font-bold">E2</span>
-          </div>
-          <span className="text-[12px] font-['Segoe_UI',sans-serif] text-black">Scenario Config Embrace</span>
+      {/* Top Bar — e2/barra/barra-superior */}
+      <div className="bg-[#f3f3f3] h-[23px] px-2 py-[6px] flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-[6px]">
+          <img src={iconLogoMercado} alt="" className="block size-4 shrink-0" />
+          <span className="text-[12px] font-['Segoe_UI',sans-serif] text-black whitespace-nowrap">Scenario Config Embrace</span>
         </div>
-        <button className="w-4 h-4 flex items-center justify-center hover:bg-gray-200">
-          <span className="text-[#9b9b9b] text-xs">×</span>
+        <button className="block size-4 shrink-0 cursor-pointer">
+          <img src={iconFechar} alt="Fechar" className="block size-4" />
         </button>
       </div>
 
-      {/* Menu Bar */}
-      <div className="bg-white border-b border-gray-300 px-2 py-1 flex items-center justify-between h-[25px]">
-        <div className="flex gap-0.5">
-          <button className="px-2 py-1 text-[12px] font-['Segoe_UI',sans-serif] hover:bg-gray-100">Arquivo</button>
-          <button className="px-2 py-1 text-[12px] font-['Segoe_UI',sans-serif] hover:bg-gray-100">Preferências</button>
-          <button className="px-2 py-1 text-[12px] font-['Segoe_UI',sans-serif] hover:bg-gray-100">Sistema</button>
+      {/* Menu Bar — e2/barra/barra-de-menu */}
+      <div className="bg-white px-2 flex items-center justify-between h-[25px] shrink-0">
+        <div className="flex items-center gap-[2px]">
+          <MenuButton label="Arquivo" />
+          <MenuButton label="Preferências" />
+          <MenuButton label="Sistema" />
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-[12px] font-['Segoe_UI',sans-serif]">Login designscenario1@gmail.com:design01@scenario.ind.br</span>
-          <div className="flex items-center gap-2">
-            <span className="text-[12px] font-['Segoe_UI:Bold',sans-serif] uppercase">Embrace Assistant</span>
-            <div className="w-[43px] h-6 bg-[#eee5c9] border border-[#acaba8] rounded-full relative">
-              <div className="absolute w-6 h-6 bg-white border border-[#aaa] rounded-full left-0 top-0"></div>
-            </div>
-            <span className="text-[11px] font-['Segoe_UI',sans-serif]">OFF</span>
-          </div>
-        </div>
+        <MenuButton label="Login designscenario1@gmail.com:design01@scenario.ind.br" />
       </div>
 
-      {/* Task Bar */}
-      <div className="bg-[#ececec] border-b border-[#cfcfcf] h-[70px] flex items-center justify-between">
-        <div className="flex gap-[2px] h-full">
+      {/* Task Bar — e2/barra/barra-de-tarefas */}
+      <div className="bg-[#ececec] border-r border-[#cfcfcf] h-[70px] pr-[2px] flex items-center gap-[46px] shrink-0">
+        <div className="flex gap-[2px] h-full items-center">
           <TaskButton icon="info" label="Informações do Projeto" />
           <TaskButton icon="structure" label="Estrutura" />
           <TaskButton icon="equipment" label="Equipamentos" />
@@ -496,60 +570,70 @@ export default function App() {
           <TaskButton icon="drivers" label="Gerenciamento de Drivers" />
           <TaskButton icon="send" label="Enviar Projeto" />
         </div>
-        <div className="flex items-center gap-[10px] pr-[33px] h-full">
-          <span className="text-[12px] font-['Segoe_UI:Bold',sans-serif] text-right uppercase">Embrace Assistant</span>
-          <div className="relative h-[40px] w-[43px]">
-            <div className="absolute top-[25px] text-center w-full">
-              <p className="text-[11px] font-['Segoe_UI',sans-serif]">OFF</p>
+        <div className="relative flex flex-1 min-w-px h-full items-center justify-end gap-[10px] pr-[33px] overflow-clip">
+          <div className="flex flex-1 min-w-px max-w-[120px] items-center justify-end gap-[12px] overflow-clip">
+            <p className="flex-1 min-w-px text-right text-[9px] leading-normal font-['Segoe_UI',sans-serif] font-bold uppercase text-black">
+              Embrace Assistant
+            </p>
+            <div className="flex flex-col items-center shrink-0">
+              <button className="block h-[25px] w-[43px] cursor-pointer">
+                <img src={iconToggleOn} alt="" className="block h-[25px] w-[43px]" />
+              </button>
+              <p className="text-[11px] leading-normal font-['Segoe_UI',sans-serif] text-black text-center">ON</p>
             </div>
-            <button className="absolute top-0 left-0 w-full h-[25px]">
-              <svg className="absolute block inset-0 size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 43 25">
-                <rect fill="#EEE5C9" height="22" rx="11" stroke="#ACABA8" width="42" x="0.5" y="1.5" />
-                <circle cx="12.5" cy="12.5" fill="white" r="12" stroke="#AAAAAA" />
-              </svg>
-            </button>
           </div>
+          <button className="absolute bottom-0 right-0 block size-[23px] cursor-pointer">
+            <img src={iconColapsarExpandir} alt="Colapsar" className="block size-[23px]" />
+          </button>
         </div>
       </div>
 
-      {/* Installation Header */}
-      <div className="bg-[#1d242c] h-10 px-4 flex items-center">
-        <h1 className="text-white text-[18px] font-['Segoe_UI:Bold',sans-serif] uppercase">Instalação</h1>
+      {/* Installation Header — e2/cabeçalho-da-janela */}
+      <div className="bg-[#1d242c] h-10 px-4 py-2 flex items-center shrink-0">
+        <h1 className="text-white text-[18px] leading-normal font-['Segoe_UI',sans-serif] font-bold uppercase">Instalação</h1>
       </div>
 
-      {/* Tabs */}
-      <div className="bg-[#ddd] border-b border-[#b5b5b5] px-1 pt-1 flex gap-px">
+      {/* Tabs — e2/menu-de-abas */}
+      <div className="bg-[#ddd] border-b border-[#b5b5b5] h-[29px] pl-[5px] pt-1 flex items-end gap-px shrink-0">
         <Tab label="Informações" />
         <Tab label="Configurações" />
         <Tab label="Rede" active />
         <Tab label="Licença" />
       </div>
 
-      {/* Action Buttons */}
-      <div className="bg-[#f4f4f4] px-1 py-1 flex gap-1 h-[51px] items-center border-b border-gray-300">
-        <ActionButton icon="modo-programacao" label="Modo Programação" active={currentMode === 'programacao'} onClick={() => setCurrentMode('programacao')} />
-        <ActionButton icon="modo-teste" label="Modo Teste" active={currentMode === 'teste'} onClick={() => setCurrentMode('teste')} />
-        <ActionButton icon="zigbee" label="Zigbee" />
-        <div className="w-px h-10 bg-[#cfcfcf]"></div>
-        <ActionButton icon="procurar-redes" label="Procurar Redes" />
-        <ActionButton icon="procurar-dispositivos" label="Procurar dispositivos" />
-        <ActionButton icon="atualizar-firmwares" label="Atualizar Firmwares" />
+      {/* Action Buttons — menu de ações */}
+      <div className="bg-[#f4f4f4] h-[51px] pl-1 pt-[5px] flex items-start shrink-0">
+        <div className="flex items-center gap-[7px]">
+          <div className="flex items-center gap-1">
+            <ActionButton icon="modo-programacao" label="Modo Programação" active={currentMode === 'programacao'} onClick={() => changeMode('programacao')} />
+            <ActionButton icon="modo-teste" label="Modo Teste" active={currentMode === 'teste'} onClick={() => changeMode('teste')} />
+            <ActionButton icon="zigbee" label="Zigbee" />
+          </div>
+          <div className="w-px h-[42px] bg-[#cfcfcf] shrink-0" />
+          <div className="flex items-center gap-1">
+            <ActionButton icon="procurar-redes" label={'Procurar\nRedes'} />
+            <ActionButton icon="procurar-dispositivos" label="Procurar dispositivos" />
+            <ActionButton icon="atualizar-firmwares" label={'Atualizar\nFirmwares'} />
+          </div>
+        </div>
       </div>
 
-      {/* Mode Header */}
-      <div className="bg-[#1d242c] h-8 px-4 flex items-center">
-        <h2 className="text-white text-[15px] font-['Segoe_UI:Bold',sans-serif] uppercase">
+      {/* Mode Header — e2/cabeçalho-da-janela */}
+      <div className="bg-[#1d242c] h-8 px-4 py-2 flex items-center shrink-0">
+        <h2 className="text-white text-[15px] leading-normal font-['Segoe_UI',sans-serif] font-bold uppercase">
           {currentMode === 'programacao' ? 'Modo Programação' : 'Modo Teste'}
         </h2>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden border-t border-[#c8c8c8]">
+      <div className="flex-1 flex overflow-hidden">
         {currentMode === 'teste' && <ModoTeste />}
-        {currentMode === 'programacao' && /* Left Panel - Dispositivos do Projeto */ true && <>
-        <div className="w-1/2 flex flex-col border-r border-[#c8c8c8]">
-          <div className="bg-[#38404d] h-[31px] px-4 flex items-center">
-            <h3 className="text-white text-[15px] font-['Segoe_UI:Bold',sans-serif] uppercase">Dispositivos do Projeto</h3>
+        {currentMode === 'programacao' && <>
+        {/* Left Panel - Dispositivos do Projeto */}
+        <div className="relative flex-1 min-w-0 flex flex-col">
+          <div aria-hidden="true" className="absolute inset-0 border border-[#c8c8c8] pointer-events-none z-10" />
+          <div className="bg-[#38404d] h-[31px] px-4 py-2 flex items-center shrink-0 overflow-clip">
+            <h3 className="text-white text-[15px] leading-normal font-['Segoe_UI',sans-serif] font-bold uppercase">Dispositivos do Projeto</h3>
           </div>
           <div className="flex-1 bg-white overflow-auto">
             {projectDevices.map(device => (
@@ -563,6 +647,7 @@ export default function App() {
                 selectionState={isSelected(device.id)}
                 isSelected={isSelected}
                 onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
                 isDraggable={true}
                 onContextMenu={(e, dev) => handleContextMenu(e, dev, true)}
                 isProjectTree={true}
@@ -571,13 +656,14 @@ export default function App() {
           </div>
         </div>
 
-        {/* Splitter */}
-        <div className="w-1 bg-[#c8c8c8]"></div>
+        {/* Splitter — e2/splitter */}
+        <div className="w-1 shrink-0 bg-[#c8c8c8]"></div>
 
         {/* Right Panel - Dispositivos da Rede */}
-        <div className="w-1/2 flex flex-col">
-          <div className="bg-[#38404d] h-[31px] px-4 flex items-center">
-            <h3 className="text-white text-[15px] font-['Segoe_UI:Bold',sans-serif] uppercase">Dispositivos da Rede</h3>
+        <div className="relative flex-1 min-w-0 flex flex-col">
+          <div aria-hidden="true" className="absolute inset-0 border border-[#c8c8c8] pointer-events-none z-10" />
+          <div className="bg-[#38404d] h-[31px] px-4 py-2 flex items-center shrink-0 overflow-clip">
+            <h3 className="text-white text-[15px] leading-normal font-['Segoe_UI',sans-serif] font-bold uppercase">Dispositivos da Rede</h3>
           </div>
           <div className="flex-1 bg-white overflow-auto">
             {networkDevices.map(device => (
@@ -594,6 +680,7 @@ export default function App() {
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 isDropTarget={true}
+                draggedDevice={draggedDevice}
                 isProjectTree={false}
               />
             ))}
@@ -602,52 +689,45 @@ export default function App() {
         </>}
       </div>
 
-      {/* Footer */}
-      <div className="bg-white border-t border-[#cfcfcf] px-2 py-0.5 flex justify-between text-[12px] font-['Segoe_UI',sans-serif] h-6">
-        <div className="flex gap-4">
-          <span className="border-r border-[#cfcfcf] pr-4">Versão 2.15.5 Build(6)</span>
-          <span className="border-r border-[#cfcfcf] pr-4">Status conexão: Local</span>
-          <span className="border-r border-[#cfcfcf] pr-4">Instalação: Nome do projeto</span>
+      {/* Footer — e2/barra/barra-inferior */}
+      <div className="bg-white border-t border-[#cfcfcf] h-6 flex items-center overflow-clip shrink-0 text-[12px] leading-normal font-['Segoe_UI',sans-serif] text-black whitespace-nowrap">
+        <div className="w-[124px] h-6 shrink-0 flex items-center gap-[2px] pl-[5px] pr-1 border-r border-[#cfcfcf]">
+          <span>Versão:</span>
+          <span>2.15.5 Build(6)</span>
         </div>
-        <span>Nenhuma notificação</span>
+        <div className="w-[156px] h-6 shrink-0 flex items-center gap-[2px] px-1 border-r border-[#cfcfcf]">
+          <span>Status conexão:</span>
+          <span>Local</span>
+        </div>
+        <div className="flex-1 min-w-px h-6 flex items-center gap-[2px] px-1 border-r border-[#cfcfcf]">
+          <span>Instalação:</span>
+          <span>Nome do projeto</span>
+        </div>
+        <div className="w-[136px] h-6 shrink-0 flex items-center justify-center pl-[13px] pr-[9px]">
+          <span>Nenhuma notificação</span>
+        </div>
       </div>
 
       {/* Context Menu */}
-      {contextMenu && contextMenu.type === 'sensor' && (
-        <div
-          className="fixed z-50"
-          style={{ left: contextMenu.x, top: contextMenu.y }}
-          onClick={handleContextMenuClick}
-        >
-          <MenuDeContextoCrLumiRf />
-        </div>
-      )}
-
-      {contextMenu && contextMenu.type === 'project' && (
-        <div
-          className="fixed z-50 w-[200px] h-[25px]"
-          style={{ left: contextMenu.x, top: contextMenu.y }}
-          onClick={handleUnlink}
-        >
-          <MenuDeContextoDesvincular />
-        </div>
-      )}
-
-      {contextMenu && contextMenu.type === 'keypad-network' && (
-        <div
-          className="fixed z-50"
-          style={{ left: contextMenu.x, top: contextMenu.y }}
-          onClick={handleDesassociar}
-        >
-          <MenuDeContextoDesassociar />
-        </div>
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={[
+            contextMenu.type === 'inclusion'
+              ? { label: 'Inclusão de CR-KP7-RF', onClick: handleContextMenuClick }
+              : contextMenu.type === 'project'
+                ? { label: 'Desvincular', onClick: handleUnlink }
+                : { label: 'Desassociar', onClick: handleDesassociar },
+          ]}
+        />
       )}
 
       {/* Overlay */}
       {showOverlay && (
         <div
           className="fixed z-50"
-          style={{ left: overlayPos.x, top: overlayPos.y, width: 650, height: 600, pointerEvents: 'auto' }}
+          style={{ left: overlayPos.x, top: overlayPos.y, width: 650, height: 650, pointerEvents: 'auto' }}
         >
           {/* Drag handle covers the header area, leaving the close button accessible */}
           <div
@@ -656,12 +736,11 @@ export default function App() {
             onMouseDown={handleOverlayMouseDown}
           />
           <ProgressiveKp7Discovery
-            onClose={() => { setShowOverlay(false); setPendingOverlayAssociations({}); }}
+            onClose={closeOverlay}
             onConcluir={handleConcluir}
             projectDevices={projectDevices}
             baseAssociations={associations}
             keypadNames={keypadCustomNames}
-            onKeypadNamesChange={setKeypadCustomNames}
             draggedDevice={draggedDevice}
             onDragOver={handleDragOver}
             onOverlayAssociationsChange={setPendingOverlayAssociations}
@@ -682,14 +761,16 @@ interface TreeNodeProps {
   isSelected: (id: string) => 'primary' | 'secondary' | null;
   onContextMenu?: (e: React.MouseEvent, device: Device) => void;
   onDragStart?: (device: Device) => void;
+  onDragEnd?: () => void;
   onDragOver?: (e: React.DragEvent) => void;
   onDrop?: (device: Device) => void;
   isDraggable?: boolean;
   isDropTarget?: boolean;
+  draggedDevice?: Device | null;
   isProjectTree?: boolean;
 }
 
-function TreeNode({ device, level, expanded, onToggle, onSelect, selectionState, isSelected, onContextMenu, onDragStart, onDragOver, onDrop, isDraggable, isDropTarget, isProjectTree }: TreeNodeProps) {
+function TreeNode({ device, level, expanded, onToggle, onSelect, selectionState, isSelected, onContextMenu, onDragStart, onDragEnd, onDragOver, onDrop, isDraggable, isDropTarget, draggedDevice, isProjectTree }: TreeNodeProps) {
   const hasChildren = device.children && device.children.length > 0;
   const isExpanded = expanded.has(device.id);
 
@@ -697,18 +778,26 @@ function TreeNode({ device, level, expanded, onToggle, onSelect, selectionState,
     if (device.type === 'project' || device.type === 'room' || device.type === 'folder') {
       return '#000000';
     }
+    // Blue only while dragging: marks the devices that can receive the dragged item
+    if (isDropTarget && draggedDevice && !device.isAssociated && device.type === draggedDevice.type) {
+      return '#3939FF';
+    }
     if (device.isAssociated) {
       return '#007F00';
     }
-    return '#3939FF';
+    // Project tree: devices still available for linking stay blue by default
+    if (isProjectTree) {
+      return '#3939FF';
+    }
+    return '#000000';
   };
 
   const getBackgroundStyle = () => {
     if (selectionState === 'primary') {
       return {
         backgroundColor: '#F5D59D',
-        border: '2px solid #F8E1B9',
-        margin: '-2px'
+        // Inset shadow instead of border: draws the 2px frame without changing the row size
+        boxShadow: 'inset 0 0 0 2px #F8E1B9'
       };
     }
     if (selectionState === 'secondary') {
@@ -738,6 +827,7 @@ function TreeNode({ device, level, expanded, onToggle, onSelect, selectionState,
             onDragStart(device);
           }
         }}
+        onDragEnd={() => onDragEnd?.()}
         onDragOver={(e) => {
           if (canDrop && onDragOver) {
             onDragOver(e);
@@ -752,27 +842,26 @@ function TreeNode({ device, level, expanded, onToggle, onSelect, selectionState,
       >
         {hasChildren ? (
           <button
-            className="w-4 h-4 flex items-center justify-center"
+            className="block size-4 shrink-0 cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
               onToggle(device.id);
             }}
           >
-            {isExpanded ? (
-              <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
-                <path d="M1 1L4 4.5L7 1" stroke="#333" strokeLinecap="round" strokeLinejoin="round" fill="#333" />
-              </svg>
-            ) : (
-              <svg width="6" height="8" viewBox="0 0 6 8" fill="none">
-                <path d="M1 1L5 4L1 7" stroke="#333" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            )}
+            <img
+              src={iconSetaMenuSuspenso}
+              alt=""
+              className={`block size-4 ${isExpanded ? '' : '-rotate-90'}`}
+            />
           </button>
         ) : (
-          <div className="w-4" />
+          <div className="w-4 shrink-0" />
+        )}
+        {!isProjectTree && device.type === 'interface' && (
+          <img src={iconCheckboxOff} alt="" className="block size-4 shrink-0" />
         )}
         <DeviceIcon type={device.type} />
-        <span className="text-[12px] font-['Segoe_UI',sans-serif]" style={{ color: getTextColor() }}>
+        <span className="text-[12px] leading-normal font-['Segoe_UI',sans-serif] whitespace-nowrap" style={{ color: getTextColor() }}>
           {device.name}
         </span>
       </div>
@@ -790,10 +879,12 @@ function TreeNode({ device, level, expanded, onToggle, onSelect, selectionState,
               isSelected={isSelected}
               onContextMenu={onContextMenu}
               onDragStart={onDragStart}
+              onDragEnd={onDragEnd}
               onDragOver={onDragOver}
               onDrop={onDrop}
               isDraggable={isDraggable}
               isDropTarget={isDropTarget}
+              draggedDevice={draggedDevice}
               isProjectTree={isProjectTree}
             />
           ))}
@@ -830,8 +921,16 @@ function DeviceIcon({ type }: { type: DeviceType }) {
     <ImageWithFallback
       src={iconSrc}
       alt=""
-      className="w-4 h-4 object-contain"
+      className="block size-4 shrink-0"
     />
+  );
+}
+
+function MenuButton({ label }: { label: string }) {
+  return (
+    <button className="h-[25px] px-2 pt-1 pb-[5px] flex items-center justify-center shrink-0 text-[12px] leading-normal font-['Segoe_UI',sans-serif] font-normal text-black whitespace-nowrap hover:bg-gray-100">
+      {label}
+    </button>
   );
 }
 
@@ -896,10 +995,10 @@ function TaskIcon({ type }: { type: string }) {
 
 function Tab({ label, active }: { label: string; active?: boolean }) {
   return (
-    <div className={`px-1.5 py-1 text-[12px] font-['Segoe_UI',sans-serif] rounded-t-sm border border-[#b5b5b5] ${
-      active ? 'bg-[#f4f4f4] border-b-0' : 'bg-gradient-to-b from-[#eee] to-[#d9d9d9]'
+    <div className={`h-6 pl-[6px] pr-[5px] flex items-center justify-center shrink-0 overflow-clip rounded-t-[2px] border-[#b5b5b5] cursor-pointer ${
+      active ? 'bg-[#f4f4f4] border-l border-r border-t' : 'border bg-gradient-to-b from-[#eee] to-[#d9d9d9]'
     }`}>
-      <span className="text-[#323232]">{label}</span>
+      <span className="text-[12px] leading-normal font-['Segoe_UI',sans-serif] text-[#323232] whitespace-nowrap">{label}</span>
     </div>
   );
 }
@@ -907,17 +1006,17 @@ function Tab({ label, active }: { label: string; active?: boolean }) {
 function ActionButton({ icon, label, active, onClick }: { icon: string; label: string; active?: boolean; onClick?: () => void }) {
   return (
     <div
-      className={`h-[42px] w-[120px] px-2 flex items-center gap-1 cursor-pointer ${
+      className={`h-[42px] w-[120px] px-2 flex items-center justify-center gap-1 overflow-clip shrink-0 cursor-pointer ${
         active
           ? 'bg-gradient-to-b from-[#f5ad7d] to-[#f5d59d] border border-[#d8973e] shadow-[0px_1px_1px_0px_rgba(216,151,62,0.5)]'
-          : 'border border-transparent shadow-[0px_1px_0.5px_rgba(201,207,210,0.5)]'
+          : 'drop-shadow-[0px_1px_0.5px_rgba(201,207,210,0.5)]'
       }`}
       onClick={onClick}
     >
-      <div className="w-7 h-7 relative shrink-0">
+      <div className="size-7 relative shrink-0 overflow-clip">
         <ActionIcon type={icon} />
       </div>
-      <span className="text-[11px] font-['Segoe_UI',sans-serif] text-black leading-[16px] flex-1">{label}</span>
+      <span className="flex-1 min-w-px overflow-hidden text-ellipsis text-[11px] leading-[16px] font-['Segoe_UI',sans-serif] text-black whitespace-pre-line">{label}</span>
     </div>
   );
 }

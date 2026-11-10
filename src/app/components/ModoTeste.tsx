@@ -114,7 +114,7 @@ const networkDevices: Device[] = [
   },
   {
     id: 'controles-rf',
-    name: 'CONTROLES RF',
+    name: 'Controles CR-KP7-RF',
     type: 'folder',
     isAssociated: false,
     children: [
@@ -348,11 +348,11 @@ function TreeNode({ device, level, expanded, onToggle, onSelect, selectedId }: T
       return '#000000';
     }
     if (device.isAssociated) return '#007F00';
-    return '#3939FF';
+    return '#000000';
   };
 
   const backgroundStyle = isSelected
-    ? { backgroundColor: '#F5D59D', border: '2px solid #F8E1B9', margin: '-2px' }
+    ? { backgroundColor: '#F5D59D', boxShadow: 'inset 0 0 0 2px #F8E1B9' } // inset: no layout shift
     : {};
 
   return (
