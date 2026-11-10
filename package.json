@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite",
+    "test:e2e": "node tests/e2e/run-all.mjs"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

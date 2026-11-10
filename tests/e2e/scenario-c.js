@@ -1,0 +1,13 @@
+const P='Dispositivos do Projeto', R='Dispositivos da Rede';
+await T.openInclusion();
+const input = T.overlayKpCell(2).querySelector('input');
+Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'Sala Nova'); input.dispatchEvent(new Event('input',{bubbles:true})); await T.wait(50);
+T.clickText('Concluir'); await T.wait(100);
+T.check('C1 renomear + Concluir aplica o nome na rede', T.tree(R).some(t=>t.startsWith('Sala Nova (CR-KP7-RF) [B4:88:3D:E1]')));
+T.contextMenu(T.treeRow(R,'[B4:88:3D:E1]')); await T.wait(50); T.clickText('Desassociar'); await T.wait(50);
+await T.openInclusion();
+T.check('C2 keypad removido volta com nome padrão na nova busca', T.overlayKpCell(2).querySelector('input').value === 'CR-KP7-RF');
+document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})); await T.wait(50);
+T.check('C3 Esc fecha a janela de inclusão', !T.overlay());
+T.check('C4 cancelar não reinclui o keypad removido', !T.tree(R).some(t=>t.includes('[B4:88:3D:E1]')));
+return T.log.join('\n');

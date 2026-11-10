@@ -31,6 +31,7 @@ Thumbs.db
 
 # Testes / coverage
 coverage/
+tests/e2e/profile/
 
 # Arquivos temporários
 *.tmp
