@@ -1,0 +1,42 @@
+/*
+ * e2/cursor — vertical scrollbar from the Embrace Desktop design system (Figma).
+ * Track 14px #ececec with #bebebe border; 10px thumb with #eee→#dedede gradient,
+ * #b5b5b5 border and 3px radius; 10px arrow buttons at both ends.
+ * WebKit/Blink only (Chrome, Edge); other engines fall back to the native scrollbar.
+ */
+.e2-scroll::-webkit-scrollbar {
+  width: 14px;
+}
+
+.e2-scroll::-webkit-scrollbar-track {
+  background: #ececec;
+  border-left: 1px solid #bebebe;
+}
+
+.e2-scroll::-webkit-scrollbar-thumb {
+  border-left: 2px solid transparent;
+  border-right: 2px solid transparent;
+  background-clip: padding-box;
+  background-image: linear-gradient(to right, #eeeeee, #dedede);
+  box-shadow: inset 0 0 0 1px #b5b5b5;
+  border-radius: 5px;
+  min-height: 24px;
+}
+
+.e2-scroll::-webkit-scrollbar-button:single-button:vertical {
+  display: block;
+  height: 10px;
+  background-color: #ececec;
+  border-left: 1px solid #bebebe;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 10px 10px;
+}
+
+.e2-scroll::-webkit-scrollbar-button:single-button:vertical:decrement {
+  background-image: url('../imports/icons/seta-10-cima.svg');
+}
+
+.e2-scroll::-webkit-scrollbar-button:single-button:vertical:increment {
+  background-image: url('../imports/icons/seta-10-baixo.svg');
+}

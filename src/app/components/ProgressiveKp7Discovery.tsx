@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import E2CrKp7Rf from '../../imports/E2CrKp7Rf/E2CrKp7Rf';
+import E2CrKp7Rf, { KEYPADS } from '../../imports/E2CrKp7Rf/E2CrKp7Rf';
 
 interface Device {
   id: string;
@@ -11,23 +11,22 @@ interface Device {
 
 interface ProgressiveKp7DiscoveryProps {
   onClose?: () => void;
-  onConcluir?: (associations: Record<string, string>) => void;
+  onConcluir?: (associations: Record<string, string>, keypadNames: Record<string, string>) => void;
   projectDevices?: Device[];
   baseAssociations?: Record<string, string>;
   keypadNames?: Record<string, string>;
-  onKeypadNamesChange?: (names: Record<string, string>) => void;
   draggedDevice?: Device | null;
   onDragOver?: (e: React.DragEvent) => void;
   onOverlayAssociationsChange?: (associations: Record<string, string>) => void;
 }
 
-export default function ProgressiveKp7Discovery({ onClose, onConcluir, projectDevices, baseAssociations, keypadNames, onKeypadNamesChange, draggedDevice, onDragOver, onOverlayAssociationsChange }: ProgressiveKp7DiscoveryProps) {
+export default function ProgressiveKp7Discovery({ onClose, onConcluir, projectDevices, baseAssociations, keypadNames, draggedDevice, onDragOver, onOverlayAssociationsChange }: ProgressiveKp7DiscoveryProps) {
   const [visibleCount, setVisibleCount] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setVisibleCount(prev => {
-        if (prev >= 5) {
+        if (prev >= KEYPADS.length) {
           clearInterval(interval);
           return prev;
         }
@@ -49,7 +48,6 @@ export default function ProgressiveKp7Discovery({ onClose, onConcluir, projectDe
         projectDevices={projectDevices}
         baseAssociations={baseAssociations}
         baseKeypadNames={keypadNames}
-        onKeypadNamesChange={onKeypadNamesChange}
         onOverlayAssociationsChange={onOverlayAssociationsChange}
       />
     </div>

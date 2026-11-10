@@ -1,0 +1,6 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="43" height="25" viewBox="0 0 43 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="toggle">
+<rect id="track" x="0.5" y="1.5" width="42" height="22" rx="11" fill="#FBCB2E" stroke="#ACABA8"/>
+<circle id="seletor" cx="30.5" cy="12.5" r="12" fill="white" stroke="#AAAAAA"/>
+</g>
+</svg>

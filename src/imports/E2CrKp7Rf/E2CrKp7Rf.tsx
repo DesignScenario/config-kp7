@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
-import svgPaths from "./svg-35qzwd4y2m";
-import imgCabecalho from "./eb441b9611f526caca21479f7b3886a23918780f.png";
-import Checkbox from "../../app/components/Checkbox";
+import Checkbox from '../../app/components/Checkbox';
+
+// Assets exported from Figma — Embrace Desktop › "E2 - CR-KP7-RF" (node 14348:159567)
+import imgCabecalhoTabela from '../icons/cabecalho-tabela.png';
+import iconSetaMenuSuspenso from '../icons/seta-menu-suspenso.svg';
+import iconKeypad from '../icons/arvore-keypad.svg';
+import iconSensores from '../icons/arvore-sensores.svg';
+import iconFecharJanela from '../icons/fechar-janela.svg';
 
 interface Device {
   id: string;
@@ -16,1383 +21,359 @@ interface SensorData {
   signal: string;
 }
 
-const KEYPAD_DATA: Record<number, { mac: string; networkId: string }> = {
-  1: { mac: "A0:C3:9E:44", networkId: "kp7-reuniao-net" },
-  2: { mac: "7F:2A:C9:10", networkId: "kp7-conferencia-net" },
-  3: { mac: "B4:88:3D:E1", networkId: "kp7-desenvolvimento-net" },
-  4: { mac: "09:FE:61:AC", networkId: "kp7-financeiro-net" },
-  5: { mac: "E7:55:B0:19", networkId: "kp7-rh-net" },
-};
+interface KeypadData {
+  mac: string;
+  networkId: string;
+  sensors: { standard: SensorData; advanced: SensorData[] };
+}
 
-const KEYPAD_NETWORK_IDS = Object.values(KEYPAD_DATA).map(kp => kp.networkId);
+export const KEYPADS: KeypadData[] = [
+  {
+    mac: 'A0:C3:9E:44',
+    networkId: 'kp7-reuniao-net',
+    sensors: {
+      standard: { name: 'Sensor Reunião 1', signal: '87%' },
+      advanced: [
+        { name: 'Sensor Reunião 1', signal: '87%' },
+        { name: 'Sensor Reunião 2', signal: '79%' },
+      ],
+    },
+  },
+  {
+    mac: '7F:2A:C9:10',
+    networkId: 'kp7-conferencia-net',
+    sensors: {
+      standard: { name: 'Sensor Conferência 1', signal: '94%' },
+      advanced: [
+        { name: 'Sensor Conferência 1', signal: '94%' },
+        { name: 'Sensor Conferência 2', signal: '81%' },
+      ],
+    },
+  },
+  {
+    mac: 'B4:88:3D:E1',
+    networkId: 'kp7-desenvolvimento-net',
+    sensors: {
+      standard: { name: 'Sensor Desenvolvimento', signal: '90%' },
+      advanced: [
+        { name: 'Sensor Desenvolvimento', signal: '90%' },
+        { name: 'Sensor RH', signal: '78%' },
+        { name: 'Sensor Financeiro', signal: '62%' },
+      ],
+    },
+  },
+  {
+    mac: '09:FE:61:AC',
+    networkId: 'kp7-financeiro-net',
+    sensors: {
+      standard: { name: 'Sensor Financeiro', signal: '86%' },
+      advanced: [
+        { name: 'Sensor Financeiro', signal: '86%' },
+        { name: 'Sensor Desenvolvimento', signal: '75%' },
+        { name: 'Sensor RH', signal: '65%' },
+      ],
+    },
+  },
+  {
+    mac: 'E7:55:B0:19',
+    networkId: 'kp7-rh-net',
+    sensors: {
+      standard: { name: 'Sensor RH', signal: '90%' },
+      advanced: [
+        { name: 'Sensor RH', signal: '90%' },
+        { name: 'Sensor Financeiro', signal: '72%' },
+        { name: 'Sensor Desenvolvimento', signal: '57%' },
+      ],
+    },
+  },
+  {
+    mac: '09:FE:31:AB',
+    networkId: 'kp7-extra-net',
+    sensors: {
+      standard: { name: 'Sensor Financeiro', signal: '86%' },
+      advanced: [
+        { name: 'Sensor Financeiro', signal: '86%' },
+        { name: 'Sensor Desenvolvimento', signal: '75%' },
+        { name: 'Sensor RH', signal: '65%' },
+      ],
+    },
+  },
+];
 
-const KEYPAD_GENERIC_NAMES: Record<number, string> = {
-  1: "Keypad RF 1",
-  2: "Keypad RF 2",
-  3: "Keypad RF 3",
-  4: "Keypad RF 4",
-  5: "Keypad RF 5",
-};
+const KEYPAD_NETWORK_IDS = KEYPADS.map(kp => kp.networkId);
+
+// Default name shown for a discovered keypad (before rename / association)
+const KEYPAD_GENERIC_NAME = 'CR-KP7-RF';
+
+const FONT = "font-['Segoe_UI',sans-serif]";
 
 const getOverlayAssociationsFromBase = (baseAssociations?: Record<string, string>): Record<string, string> => {
   if (!baseAssociations) return {};
-
-  const filteredEntries = Object.entries(baseAssociations).filter(([networkId]) => KEYPAD_NETWORK_IDS.includes(networkId));
-  return Object.fromEntries(filteredEntries);
+  return Object.fromEntries(
+    Object.entries(baseAssociations).filter(([networkId]) => KEYPAD_NETWORK_IDS.includes(networkId))
+  );
 };
 
-const KEYPAD_SENSORS: Record<number, { standard: SensorData; advanced: SensorData[] }> = {
-  1: {
-    standard: { name: "Sensor Reunião 1", signal: "87%" },
-    advanced: [
-      { name: "Sensor Reunião 1", signal: "87%" },
-      { name: "Sensor Reunião 2", signal: "79%" },
-    ],
-  },
-  2: {
-    standard: { name: "Sensor Conferência 1", signal: "94%" },
-    advanced: [
-      { name: "Sensor Conferência 1", signal: "94%" },
-      { name: "Sensor Conferência 2", signal: "88%" },
-    ],
-  },
-  3: {
-    standard: { name: "Sensor Desenvolvimento", signal: "90%" },
-    advanced: [
-      { name: "Sensor Desenvolvimento", signal: "90%" },
-      { name: "Sensor RH", signal: "78%" },
-      { name: "Sensor Financeiro", signal: "62%" },
-    ],
-  },
-  4: {
-    standard: { name: "Sensor Financeiro", signal: "86%" },
-    advanced: [
-      { name: "Sensor Financeiro", signal: "86%" },
-      { name: "Sensor Desenvolvimento", signal: "75%" },
-      { name: "Sensor RH", signal: "65%" },
-    ],
-  },
-  5: {
-    standard: { name: "Sensor RH", signal: "90%" },
-    advanced: [
-      { name: "Sensor RH", signal: "90%" },
-      { name: "Sensor Financeiro", signal: "72%" },
-      { name: "Sensor Desenvolvimento", signal: "57%" },
-    ],
-  },
+const findProjectDevice = (devices: Device[], id: string): Device | null => {
+  for (const device of devices) {
+    if (device.id === id) return device;
+    if (device.children) {
+      const found = findProjectDevice(device.children, id);
+      if (found) return found;
+    }
+  }
+  return null;
 };
 
-function AreaDoTexto() {
-  return (
-    <div className="content-stretch flex flex-[1_0_0] items-center min-w-px overflow-clip relative" data-name="área do texto">
-      <p className="[word-break:break-word] font-['Segoe_UI:Bold',sans-serif] leading-[normal] not-italic relative shrink-0 text-[18px] text-white uppercase whitespace-nowrap">CR-KP7-RF</p>
-    </div>
-  );
-}
+// Name of the room ("ambiente") that contains the project device
+const findParentRoomName = (devices: Device[], id: string, room?: string): string | undefined => {
+  for (const device of devices) {
+    if (device.id === id) return room;
+    if (device.children) {
+      const found = findParentRoomName(device.children, id, device.type === 'room' ? device.name : room);
+      if (found) return found;
+    }
+  }
+  return undefined;
+};
 
-function Descritivo() {
-  return (
-    <div className="[word-break:break-word] content-stretch flex font-['Segoe_UI:Bold',sans-serif] gap-[4px] items-center leading-[0] not-italic relative shrink-0 text-[14px] text-black whitespace-nowrap" data-name="descritivo">
-      <div className="flex flex-col justify-center relative shrink-0">
-        <p className="leading-[normal]">Inclusão de CR-KP7-RF</p>
-      </div>
-      <div className="flex flex-col justify-center relative shrink-0">
-        <p className="leading-[normal]">(Buscando dispositivos...)</p>
-      </div>
-    </div>
-  );
-}
+const BLUE = '#3939FF';
+const GREEN = '#007F00';
 
-function Cabecalho({ isAdvancedMode, onToggleMode }: { isAdvancedMode: boolean; onToggleMode: () => void }) {
-  return (
-    <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-name="cabeçalho">
-      <Descritivo />
-      <button
-        className="bg-gradient-to-b from-[#eee] h-[25px] relative rounded-[2px] shrink-0 to-[#d9d9d9] cursor-pointer border border-[#b5b5b5]"
-        onClick={onToggleMode}
-        data-name="e2/botão-principal"
-      >
-        <div className="content-stretch flex items-center justify-center overflow-clip px-[12px] relative rounded-[inherit] size-full">
-          <div className="[word-break:break-word] flex flex-col font-['Segoe_UI:Regular',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[#323232] text-[12px] text-center whitespace-nowrap">
-            <p className="leading-[normal]">{isAdvancedMode ? 'Modo padrão' : 'Modo avançado'}</p>
-          </div>
-        </div>
-      </button>
-    </div>
-  );
-}
+const mobileKey = (kp: number) => `kp${kp}Mobile`;
+const sensorKey = (kp: number, sensor: number) => `kp${kp}Sensor${sensor}`;
 
-function ItemDoCabecalho() {
-  return (
-    <div className="flex-[1_0_0] h-[24px] min-w-px relative" data-name="item do cabeçalho">
-      <div className="flex flex-row items-center overflow-clip rounded-[inherit] size-full">
-        <div className="content-stretch flex items-center px-[6px] relative size-full">
-          <div className="[word-break:break-word] flex flex-col font-['Segoe_UI:Bold',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-black whitespace-nowrap">
-            <p className="leading-[normal]">Keypad RF</p>
-          </div>
-        </div>
-      </div>
-      <div aria-hidden="true" className="absolute border-[#d8d8d8] border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
+// ─── Primitives ──────────────────────────────────────────────────────────────
 
-function ItemDoCabecalho1() {
+function E2Button({ label, onClick }: { label: string; onClick?: () => void }) {
   return (
-    <div className="h-[24px] relative shrink-0 w-[90px]" data-name="item do cabeçalho">
-      <div className="content-stretch flex items-center justify-center overflow-clip px-[6px] relative rounded-[inherit] size-full">
-        <div className="[word-break:break-word] flex flex-col font-['Segoe_UI:Bold',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-black whitespace-nowrap">
-          <p className="leading-[normal]">Intensidade</p>
-        </div>
-      </div>
-      <div aria-hidden="true" className="absolute border-[#d8d8d8] border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function ItemDoCabecalho2() {
-  return (
-    <div className="h-[24px] relative shrink-0 w-[150px]" data-name="item do cabeçalho">
-      <div className="content-stretch flex items-center justify-center overflow-clip px-[6px] relative rounded-[inherit] size-full">
-        <div className="[word-break:break-word] flex flex-col font-['Segoe_UI:Bold',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-black whitespace-nowrap">
-          <p className="leading-[normal]">Associar</p>
-        </div>
-      </div>
-      <div aria-hidden="true" className="absolute border-[#d8d8d8] border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function Cabecalho1() {
-  return (
-    <div className="relative shrink-0 w-full" data-name="cabeçalho">
-      <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgCabecalho} />
-      <div className="content-stretch flex items-center overflow-clip relative rounded-[inherit] size-full">
-        <ItemDoCabecalho />
-        <ItemDoCabecalho1 />
-        <ItemDoCabecalho2 />
-      </div>
-      <div aria-hidden="true" className="absolute border-[#d8d8d8] border-b border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function Group() {
-  return (
-    <div className="absolute inset-[-0.01%_0_0.01%_0]" data-name="Group">
-      <svg className="absolute block inset-0 size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 16 16.0012">
-        <g id="Group">
-          <g id="Vector" />
-          <g id="Group_2">
-            <path clipRule="evenodd" d={svgPaths.p1f61aa00} fill="var(--fill-0, white)" fillRule="evenodd" id="Vector_2" />
-            <path d={svgPaths.p3a40a100} fill="var(--fill-0, #38404D)" id="Vector_3" />
-          </g>
-          <path clipRule="evenodd" d={svgPaths.p38345f00} fill="var(--fill-0, #24AAD7)" fillRule="evenodd" id="Vector_4" />
-        </g>
-      </svg>
-    </div>
-  );
-}
-
-function Camada() {
-  return (
-    <div className="absolute contents inset-[-0.01%_0_0_0]" data-name="Camada_1">
-      <Group />
-    </div>
-  );
-}
-
-function ItemDaLista({ mac, displayName, isAssociated, onDragOver, onDrop, onRename }: { mac: string; displayName: string; isAssociated: boolean; onDragOver: (e: React.DragEvent) => void; onDrop: (e: React.DragEvent) => void; onRename: (name: string) => void }) {
-  const textColor = isAssociated ? "#007F00" : "black";
-
-  return (
-    <div
-      className="flex-[1_0_0] h-[24px] min-w-px relative"
-      data-name="item da lista"
-      onDragOver={onDragOver}
-      onDrop={onDrop}
+    <button
+      className={`h-[25px] px-3 flex items-center justify-center shrink-0 overflow-clip rounded-[2px] border border-[#b5b5b5] bg-gradient-to-b from-[#eee] to-[#d9d9d9] cursor-pointer text-[12px] leading-normal ${FONT} font-normal text-[#323232] whitespace-nowrap`}
+      onClick={onClick}
     >
-      <div className="flex flex-row items-center overflow-clip rounded-[inherit] size-full">
-        <div className="content-stretch flex gap-[4px] items-center pl-[6px] pr-[3px] relative size-full">
-          <div className="overflow-clip relative shrink-0 size-[16px]" data-name="app/ícone/seta-menu-suspenso-16px">
-            <div className="-translate-x-1/2 -translate-y-1/2 absolute h-[5px] left-1/2 top-1/2 w-[7px]">
-              <div className="absolute inset-[-10%_-5.84%_-8.51%_-5.84%]">
-                <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 7.81796 5.92562">
-                  <path d={svgPaths.pdbea00} fill="var(--fill-0, #333333)" id="Vector 11" stroke="var(--stroke-0, #333333)" />
-                </svg>
-              </div>
-            </div>
-          </div>
-          <div className="overflow-clip relative shrink-0 size-[16px]" data-name="e2/ícone/16px/keypad-wifi-2">
-            <Camada />
-          </div>
-          <div className="flex flex-row items-center gap-[4px] relative shrink-0 whitespace-nowrap">
-            {isAssociated ? (
-              <span className="font-['Segoe_UI:Regular',sans-serif] not-italic text-[12px] leading-[normal]" style={{ color: textColor }}>{displayName}</span>
-            ) : (
-              <>
-                <input
-                  className="bg-transparent border-0 focus:outline-none leading-[normal] p-0 m-0 font-['Segoe_UI:Regular',sans-serif] text-[12px] not-italic"
-                  style={{ color: textColor, width: `${displayName.length || 1}ch` }}
-                  value={displayName}
-                  onChange={(e) => onRename(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                />
-                <span className="font-['Segoe_UI:Regular',sans-serif] not-italic text-[12px] leading-[normal] text-black">[{mac}]</span>
-              </>
-            )}
-          </div>
-        </div>
+      {label}
+    </button>
+  );
+}
+
+const CELL = 'h-6 border-b border-r border-[#ededed] flex items-center overflow-clip';
+
+// ─── Table ───────────────────────────────────────────────────────────────────
+
+function TableHeader() {
+  const cell = 'h-full px-[6px] flex items-center overflow-clip border-r border-[#d8d8d8]';
+  const text = `text-[12px] leading-normal ${FONT} font-bold text-black whitespace-nowrap`;
+  return (
+    <div className="sticky top-0 z-10 h-6 shrink-0 flex items-center w-full border-b border-[#c8c8c8] bg-[#ececec]">
+      <img alt="" className="absolute inset-0 size-full object-cover pointer-events-none" src={imgCabecalhoTabela} />
+      <div className={`relative flex-1 min-w-px ${cell}`}><p className={text}>Keypad RF</p></div>
+      <div className={`relative w-[90px] shrink-0 justify-center ${cell}`}><p className={text}>Intensidade</p></div>
+      <div className={`relative w-[150px] shrink-0 justify-center ${cell}`}><p className={text}>Associar</p></div>
+    </div>
+  );
+}
+
+interface KeypadRowProps {
+  mac: string;
+  displayName: string;
+  roomName?: string;
+  isAssociated: boolean;
+  isAvailable: boolean;
+  mobileChecked: boolean;
+  onMobileChange: () => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDrop: (e: React.DragEvent) => void;
+  onRename: (name: string) => void;
+}
+
+function KeypadRow({ mac, displayName, roomName, isAssociated, isAvailable, mobileChecked, onMobileChange, onDragOver, onDrop, onRename }: KeypadRowProps) {
+  const text = `text-[12px] leading-normal ${FONT}`;
+  // Linked = green; free row that can receive the KP7 being dragged = blue; otherwise black
+  const color = isAssociated ? GREEN : isAvailable ? BLUE : '#000000';
+  return (
+    <div className="bg-white flex items-center w-full">
+      <div className={`${CELL} flex-1 min-w-px gap-1 pl-[6px] pr-[3px]`} onDragOver={onDragOver} onDrop={onDrop}>
+        <img src={iconSetaMenuSuspenso} alt="" className="block size-4 shrink-0" />
+        <img src={iconKeypad} alt="" className="block size-4 shrink-0" />
+        {/* The name stays editable before and after the link (rename only happens in this window) */}
+        <span className="flex items-center whitespace-nowrap" style={{ color }}>
+          {/* Auto-width input: an invisible copy of the text sets the width and the input
+              covers it, so the suffix sits exactly one space after the name */}
+          <span className="relative inline-block">
+            <span aria-hidden="true" className={`${text} invisible whitespace-pre`}>
+              {displayName || ' '}
+            </span>
+            <input
+              className={`${text} absolute inset-0 size-full min-w-0 bg-transparent border-0 p-0 m-0 focus:outline-none`}
+              style={{ color }}
+              value={displayName}
+              onChange={(e) => onRename(e.target.value)}
+              // Clicking to rename selects the whole name
+              onFocus={(e) => e.currentTarget.select()}
+              onMouseUp={(e) => e.preventDefault()}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </span>
+          <span className={`${text} whitespace-pre`}>
+            {' '}{isAssociated ? (roomName ? `(${roomName})` : '') : `[${mac}]`}
+          </span>
+        </span>
       </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function ItemDaLista1() {
-  return (
-    <div className="h-[24px] relative shrink-0 w-[90px]" data-name="item da lista">
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function ItemDaLista2({ checked, onChange }: { checked: boolean; onChange: () => void }) {
-  return (
-    <div className="h-[24px] relative shrink-0 w-[150px]" data-name="item da lista">
-      <div className="content-stretch flex gap-[6px] items-center overflow-clip pl-[67px] relative rounded-[inherit] size-full">
-        <Checkbox checked={checked} onChange={onChange} />
-        <div className="[word-break:break-word] flex flex-col font-['Segoe_UI:Regular',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-black whitespace-nowrap">
-          <p className="leading-[normal]">(Móvel)</p>
-        </div>
+      <div className={`${CELL} w-[90px] shrink-0`} />
+      <div className={`${CELL} w-[150px] shrink-0 gap-[6px] pl-[67px]`}>
+        <Checkbox checked={mobileChecked} onChange={onMobileChange} />
+        <span className={`${text} text-black whitespace-nowrap`}>(Móvel)</span>
       </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
     </div>
   );
 }
 
-function PrimeiraLinha({ mobileChecked, onMobileChange, mac, displayName, isAssociated, onDragOver, onDrop, onRename }: { mobileChecked: boolean; onMobileChange: () => void; mac: string; displayName: string; isAssociated: boolean; onDragOver: (e: React.DragEvent) => void; onDrop: (e: React.DragEvent) => void; onRename: (name: string) => void }) {
-  return (
-    <div className="bg-white content-stretch flex items-center overflow-clip relative shrink-0 w-full" data-name="primeira linha">
-      <ItemDaLista mac={mac} displayName={displayName} isAssociated={isAssociated} onDragOver={onDragOver} onDrop={onDrop} onRename={onRename} />
-      <ItemDaLista1 />
-      <ItemDaLista2 checked={mobileChecked} onChange={onMobileChange} />
-    </div>
-  );
+interface SensorRowProps {
+  sensor: SensorData;
+  checked: boolean;
+  disabled: boolean;
+  onChange: () => void;
 }
 
-function Camada1() {
+function SensorRow({ sensor, checked, disabled, onChange }: SensorRowProps) {
+  const text = `text-[12px] leading-normal ${FONT} text-black whitespace-nowrap`;
+  const opacity = disabled ? 0.25 : 1;
   return (
-    <div className="absolute contents inset-0" data-name="Camada_1">
-      <svg className="absolute block inset-0 size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 16 16">
-        <g id="Group">
-          <g id="Vector" />
-          <path clipRule="evenodd" d={svgPaths.p5465000} fill="var(--fill-0, white)" fillRule="evenodd" id="Vector_2" />
-          <path clipRule="evenodd" d={svgPaths.p2eaa66c0} fill="var(--fill-0, #24AAD7)" fillRule="evenodd" id="Vector_3" />
-          <path d={svgPaths.p1fa31840} fill="var(--fill-0, #38404D)" id="Vector_4" />
-        </g>
-      </svg>
-    </div>
-  );
-}
-
-function ItemDaLista3({ opacity = 1, sensorName }: { opacity?: number; sensorName: string }) {
-  return (
-    <div className="flex-[1_0_0] h-[24px] min-w-px relative" data-name="item da lista">
-      <div className="flex flex-row items-center overflow-clip rounded-[inherit] size-full">
-        <div className="content-stretch flex gap-[4px] items-center pl-[38px] pr-[3px] relative size-full">
-          <div className="overflow-clip relative shrink-0 size-[16px]" style={{ opacity }} data-name="e2/ícone/16px/sensores">
-            <Camada1 />
-          </div>
-          <div className="[word-break:break-word] flex flex-col font-['Segoe_UI:Regular',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-black whitespace-nowrap" style={{ opacity }}>
-            <p className="leading-[normal]">{sensorName}</p>
-          </div>
-        </div>
+    <div className="bg-white flex items-center w-full">
+      <div className={`${CELL} flex-1 min-w-px gap-1 pl-[38px] pr-[3px]`}>
+        <img src={iconSensores} alt="" className="block size-4 shrink-0" style={{ opacity }} />
+        <span className={text} style={{ opacity }}>{sensor.name}</span>
       </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function ItemDaLista4({ opacity = 1, signal }: { opacity?: number; signal: string }) {
-  return (
-    <div className="h-[24px] relative shrink-0 w-[90px]" data-name="item da lista">
-      <div className="content-stretch flex items-center justify-center overflow-clip pl-[6px] pr-[3px] relative rounded-[inherit] size-full">
-        <div className="[word-break:break-word] flex flex-col font-['Segoe_UI:Regular',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-black whitespace-nowrap" style={{ opacity }}>
-          <p className="leading-[normal]">{signal}</p>
-        </div>
+      <div className={`${CELL} w-[90px] shrink-0 justify-center pl-[6px] pr-[3px]`}>
+        <span className={text} style={{ opacity }}>{sensor.signal}</span>
       </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function ItemDaLista5({ checked, disabled, onChange, opacity = 1 }: { checked: boolean; disabled: boolean; onChange: () => void; opacity?: number }) {
-  return (
-    <div className="h-[24px] relative shrink-0 w-[150px]" data-name="item da lista">
-      <div className="content-stretch flex items-center overflow-clip pl-[67px] relative rounded-[inherit] size-full">
+      <div className={`${CELL} w-[150px] shrink-0 pl-[67px]`}>
         <Checkbox checked={checked} disabled={disabled} onChange={onChange} opacity={opacity} />
       </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
     </div>
   );
 }
 
-function PrimeiraLinha1({ mobileChecked, sensorChecked, onSensorChange, sensorName, signal }: { mobileChecked: boolean; sensorChecked: boolean; onSensorChange: () => void; sensorName: string; signal: string }) {
-  const opacity = mobileChecked ? 0.25 : 1;
-  return (
-    <div
-      className="bg-white content-stretch flex items-center overflow-clip relative shrink-0 w-full"
-      data-name="primeira linha"
-    >
-      <ItemDaLista3 opacity={opacity} sensorName={sensorName} />
-      <ItemDaLista4 opacity={opacity} signal={signal} />
-      <ItemDaLista5 checked={sensorChecked} disabled={mobileChecked} onChange={onSensorChange} opacity={opacity} />
-    </div>
-  );
+interface ConteudoProps {
+  visibleDevices: number;
+  isAdvancedMode: boolean;
+  draggedDevice?: Device | null;
+  onDragOver?: (e: React.DragEvent) => void;
+  overlayAssociations: Record<string, string>;
+  setOverlayAssociations: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  projectDevices?: Device[];
+  keypadNames: Record<string, string>;
+  onRenameKeypad: (networkId: string, name: string) => void;
+  onResetKeypadName: (networkId: string) => void;
 }
 
-function Group1() {
-  return (
-    <div className="absolute inset-[-0.01%_0_0.01%_0]" data-name="Group">
-      <svg className="absolute block inset-0 size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 16 16.0012">
-        <g id="Group">
-          <g id="Vector" />
-          <g id="Group_2">
-            <path clipRule="evenodd" d={svgPaths.p1f61aa00} fill="var(--fill-0, white)" fillRule="evenodd" id="Vector_2" />
-            <path d={svgPaths.p3a40a100} fill="var(--fill-0, #38404D)" id="Vector_3" />
-          </g>
-          <path clipRule="evenodd" d={svgPaths.p38345f00} fill="var(--fill-0, #24AAD7)" fillRule="evenodd" id="Vector_4" />
-        </g>
-      </svg>
-    </div>
-  );
-}
+function Conteudo({ visibleDevices, isAdvancedMode, draggedDevice, onDragOver, overlayAssociations, setOverlayAssociations, projectDevices, keypadNames, onRenameKeypad, onResetKeypadName }: ConteudoProps) {
+  const [checkboxes, setCheckboxes] = useState<Record<string, boolean>>({});
 
-function Camada2() {
-  return (
-    <div className="absolute contents inset-[-0.01%_0_0_0]" data-name="Camada_1">
-      <Group1 />
-    </div>
-  );
-}
+  const getSensors = (kp: KeypadData) => (isAdvancedMode ? kp.sensors.advanced : [kp.sensors.standard]);
 
-function ItemDaLista6({ mac, displayName, isAssociated, onDragOver, onDrop, onRename }: { mac: string; displayName: string; isAssociated: boolean; onDragOver: (e: React.DragEvent) => void; onDrop: (e: React.DragEvent) => void; onRename: (name: string) => void }) {
-  const textColor = isAssociated ? "#007F00" : "black";
-
-  return (
-    <div
-      className="flex-[1_0_0] h-[24px] min-w-px relative"
-      data-name="item da lista"
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-    >
-      <div className="flex flex-row items-center overflow-clip rounded-[inherit] size-full">
-        <div className="content-stretch flex gap-[4px] items-center pl-[6px] pr-[3px] relative size-full">
-          <div className="overflow-clip relative shrink-0 size-[16px]" data-name="app/ícone/seta-menu-suspenso-16px">
-            <div className="-translate-x-1/2 -translate-y-1/2 absolute h-[5px] left-1/2 top-1/2 w-[7px]">
-              <div className="absolute inset-[-10%_-5.84%_-8.51%_-5.84%]">
-                <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 7.81796 5.92562">
-                  <path d={svgPaths.pdbea00} fill="var(--fill-0, #333333)" id="Vector 11" stroke="var(--stroke-0, #333333)" />
-                </svg>
-              </div>
-            </div>
-          </div>
-          <div className="overflow-clip relative shrink-0 size-[16px]" data-name="e2/ícone/16px/keypad-wifi-2">
-            <Camada2 />
-          </div>
-          <div className="flex flex-row items-center gap-[4px] relative shrink-0 whitespace-nowrap">
-            {isAssociated ? (
-              <span className="font-['Segoe_UI:Regular',sans-serif] not-italic text-[12px] leading-[normal]" style={{ color: textColor }}>{displayName}</span>
-            ) : (
-              <>
-                <input
-                  className="bg-transparent border-0 focus:outline-none leading-[normal] p-0 m-0 font-['Segoe_UI:Regular',sans-serif] text-[12px] not-italic"
-                  style={{ color: textColor, width: `${displayName.length || 1}ch` }}
-                  value={displayName}
-                  onChange={(e) => onRename(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                />
-                <span className="font-['Segoe_UI:Regular',sans-serif] not-italic text-[12px] leading-[normal] text-black">[{mac}]</span>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function ItemDaLista7() {
-  return (
-    <div className="h-[24px] relative shrink-0 w-[90px]" data-name="item da lista">
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function ItemDaLista8({ checked, onChange }: { checked: boolean; onChange: () => void }) {
-  return (
-    <div className="h-[24px] relative shrink-0 w-[150px]" data-name="item da lista">
-      <div className="content-stretch flex gap-[6px] items-center overflow-clip pl-[67px] relative rounded-[inherit] size-full">
-        <Checkbox checked={checked} onChange={onChange} />
-        <div className="[word-break:break-word] flex flex-col font-['Segoe_UI:Regular',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-black whitespace-nowrap">
-          <p className="leading-[normal]">(Móvel)</p>
-        </div>
-      </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function SegundaLinha({ mobileChecked, onMobileChange, mac, displayName, isAssociated, onDragOver, onDrop, onRename }: { mobileChecked: boolean; onMobileChange: () => void; mac: string; displayName: string; isAssociated: boolean; onDragOver: (e: React.DragEvent) => void; onDrop: (e: React.DragEvent) => void; onRename: (name: string) => void }) {
-  return (
-    <div className="bg-[#f9f9f9] content-stretch flex items-center overflow-clip relative shrink-0 w-full" data-name="segunda linha">
-      <ItemDaLista6 mac={mac} displayName={displayName} isAssociated={isAssociated} onDragOver={onDragOver} onDrop={onDrop} onRename={onRename} />
-      <ItemDaLista7 />
-      <ItemDaLista8 checked={mobileChecked} onChange={onMobileChange} />
-    </div>
-  );
-}
-
-function Camada3() {
-  return (
-    <div className="absolute contents inset-0" data-name="Camada_1">
-      <svg className="absolute block inset-0 size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 16 16">
-        <g id="Group">
-          <g id="Vector" />
-          <path clipRule="evenodd" d={svgPaths.p5465000} fill="var(--fill-0, white)" fillRule="evenodd" id="Vector_2" />
-          <path clipRule="evenodd" d={svgPaths.p2eaa66c0} fill="var(--fill-0, #24AAD7)" fillRule="evenodd" id="Vector_3" />
-          <path d={svgPaths.p1fa31840} fill="var(--fill-0, #38404D)" id="Vector_4" />
-        </g>
-      </svg>
-    </div>
-  );
-}
-
-function ItemDaLista9() {
-  return (
-    <div className="flex-[1_0_0] h-[24px] min-w-px relative" data-name="item da lista">
-      <div className="flex flex-row items-center overflow-clip rounded-[inherit] size-full">
-        <div className="content-stretch flex gap-[4px] items-center pl-[38px] pr-[3px] relative size-full">
-          <div className="overflow-clip relative shrink-0 size-[16px]" data-name="e2/ícone/16px/sensores">
-            <Camada3 />
-          </div>
-          <div className="[word-break:break-word] flex flex-col font-['Segoe_UI:Regular',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-black whitespace-nowrap">
-            <p className="leading-[normal]">Sensor Conferência 1</p>
-          </div>
-        </div>
-      </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function ItemDaLista10() {
-  return (
-    <div className="h-[24px] relative shrink-0 w-[90px]" data-name="item da lista">
-      <div className="content-stretch flex items-center justify-center overflow-clip pl-[6px] pr-[3px] relative rounded-[inherit] size-full">
-        <div className="[word-break:break-word] flex flex-col font-['Segoe_UI:Regular',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-black whitespace-nowrap">
-          <p className="leading-[normal]">94%</p>
-        </div>
-      </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function ItemDaLista11({ checked, disabled, onChange, opacity = 1 }: { checked: boolean; disabled: boolean; onChange: () => void; opacity?: number }) {
-  return (
-    <div className="h-[24px] relative shrink-0 w-[150px]" data-name="item da lista">
-      <div className="content-stretch flex items-center overflow-clip pl-[67px] relative rounded-[inherit] size-full">
-        <Checkbox checked={checked} disabled={disabled} onChange={onChange} opacity={opacity} />
-      </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function SegundaLinha1({ mobileChecked, sensorChecked, onSensorChange, sensorName, signal }: { mobileChecked: boolean; sensorChecked: boolean; onSensorChange: () => void; sensorName: string; signal: string }) {
-  const opacity = mobileChecked ? 0.25 : 1;
-  return (
-    <div
-      className="bg-[#f9f9f9] content-stretch flex items-center overflow-clip relative shrink-0 w-full"
-      data-name="segunda linha"
-    >
-      <ItemDaLista3 opacity={opacity} sensorName={sensorName} />
-      <ItemDaLista4 opacity={opacity} signal={signal} />
-      <ItemDaLista11 checked={sensorChecked} disabled={mobileChecked} onChange={onSensorChange} opacity={opacity} />
-    </div>
-  );
-}
-
-function Group2() {
-  return (
-    <div className="absolute inset-[-0.01%_0_0.01%_0]" data-name="Group">
-      <svg className="absolute block inset-0 size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 16 16.0012">
-        <g id="Group">
-          <g id="Vector" />
-          <g id="Group_2">
-            <path clipRule="evenodd" d={svgPaths.p1f61aa00} fill="var(--fill-0, white)" fillRule="evenodd" id="Vector_2" />
-            <path d={svgPaths.p3a40a100} fill="var(--fill-0, #38404D)" id="Vector_3" />
-          </g>
-          <path clipRule="evenodd" d={svgPaths.p38345f00} fill="var(--fill-0, #24AAD7)" fillRule="evenodd" id="Vector_4" />
-        </g>
-      </svg>
-    </div>
-  );
-}
-
-function Camada4() {
-  return (
-    <div className="absolute contents inset-[-0.01%_0_0_0]" data-name="Camada_1">
-      <Group2 />
-    </div>
-  );
-}
-
-function ItemDaLista12({ mac, displayName, isAssociated, onDragOver, onDrop, onRename }: { mac: string; displayName: string; isAssociated: boolean; onDragOver: (e: React.DragEvent) => void; onDrop: (e: React.DragEvent) => void; onRename: (name: string) => void }) {
-  const textColor = isAssociated ? "#007F00" : "black";
-
-  return (
-    <div
-      className="flex-[1_0_0] h-[24px] min-w-px relative"
-      data-name="item da lista"
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-    >
-      <div className="flex flex-row items-center overflow-clip rounded-[inherit] size-full">
-        <div className="content-stretch flex gap-[4px] items-center pl-[6px] pr-[3px] relative size-full">
-          <div className="overflow-clip relative shrink-0 size-[16px]" data-name="app/ícone/seta-menu-suspenso-16px">
-            <div className="-translate-x-1/2 -translate-y-1/2 absolute h-[5px] left-1/2 top-1/2 w-[7px]">
-              <div className="absolute inset-[-10%_-5.84%_-8.51%_-5.84%]">
-                <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 7.81796 5.92562">
-                  <path d={svgPaths.pdbea00} fill="var(--fill-0, #333333)" id="Vector 11" stroke="var(--stroke-0, #333333)" />
-                </svg>
-              </div>
-            </div>
-          </div>
-          <div className="overflow-clip relative shrink-0 size-[16px]" data-name="e2/ícone/16px/keypad-wifi-2">
-            <Camada4 />
-          </div>
-          <div className="flex flex-row items-center gap-[4px] relative shrink-0 whitespace-nowrap">
-            {isAssociated ? (
-              <span className="font-['Segoe_UI:Regular',sans-serif] not-italic text-[12px] leading-[normal]" style={{ color: textColor }}>{displayName}</span>
-            ) : (
-              <>
-                <input
-                  className="bg-transparent border-0 focus:outline-none leading-[normal] p-0 m-0 font-['Segoe_UI:Regular',sans-serif] text-[12px] not-italic"
-                  style={{ color: textColor, width: `${displayName.length || 1}ch` }}
-                  value={displayName}
-                  onChange={(e) => onRename(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                />
-                <span className="font-['Segoe_UI:Regular',sans-serif] not-italic text-[12px] leading-[normal] text-black">[{mac}]</span>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function ItemDaLista13() {
-  return (
-    <div className="h-[24px] relative shrink-0 w-[90px]" data-name="item da lista">
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function ItemDaLista14({ checked, onChange }: { checked: boolean; onChange: () => void }) {
-  return (
-    <div className="h-[24px] relative shrink-0 w-[150px]" data-name="item da lista">
-      <div className="content-stretch flex gap-[6px] items-center overflow-clip pl-[67px] relative rounded-[inherit] size-full">
-        <Checkbox checked={checked} onChange={onChange} />
-        <div className="[word-break:break-word] flex flex-col font-['Segoe_UI:Regular',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-black whitespace-nowrap">
-          <p className="leading-[normal]">(Móvel)</p>
-        </div>
-      </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function TerceiraLinha({ mobileChecked, onMobileChange, mac, displayName, isAssociated, onDragOver, onDrop, onRename }: { mobileChecked: boolean; onMobileChange: () => void; mac: string; displayName: string; isAssociated: boolean; onDragOver: (e: React.DragEvent) => void; onDrop: (e: React.DragEvent) => void; onRename: (name: string) => void }) {
-  return (
-    <div className="bg-white content-stretch flex items-center overflow-clip relative shrink-0 w-full" data-name="terceira linha">
-      <ItemDaLista12 mac={mac} displayName={displayName} isAssociated={isAssociated} onDragOver={onDragOver} onDrop={onDrop} onRename={onRename} />
-      <ItemDaLista13 />
-      <ItemDaLista14 checked={mobileChecked} onChange={onMobileChange} />
-    </div>
-  );
-}
-
-function Camada5() {
-  return (
-    <div className="absolute contents inset-0" data-name="Camada_1">
-      <svg className="absolute block inset-0 size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 16 16">
-        <g id="Group">
-          <g id="Vector" />
-          <path clipRule="evenodd" d={svgPaths.p5465000} fill="var(--fill-0, white)" fillRule="evenodd" id="Vector_2" />
-          <path clipRule="evenodd" d={svgPaths.p2eaa66c0} fill="var(--fill-0, #24AAD7)" fillRule="evenodd" id="Vector_3" />
-          <path d={svgPaths.p1fa31840} fill="var(--fill-0, #38404D)" id="Vector_4" />
-        </g>
-      </svg>
-    </div>
-  );
-}
-
-function ItemDaLista15() {
-  return (
-    <div className="flex-[1_0_0] h-[24px] min-w-px relative" data-name="item da lista">
-      <div className="flex flex-row items-center overflow-clip rounded-[inherit] size-full">
-        <div className="content-stretch flex gap-[4px] items-center pl-[38px] pr-[3px] relative size-full">
-          <div className="overflow-clip relative shrink-0 size-[16px]" data-name="e2/ícone/16px/sensores">
-            <Camada5 />
-          </div>
-          <div className="[word-break:break-word] flex flex-col font-['Segoe_UI:Regular',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-black whitespace-nowrap">
-            <p className="leading-[normal]">Sensor Desenvolvimento</p>
-          </div>
-        </div>
-      </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function ItemDaLista16() {
-  return (
-    <div className="h-[24px] relative shrink-0 w-[90px]" data-name="item da lista">
-      <div className="content-stretch flex items-center justify-center overflow-clip pl-[6px] pr-[3px] relative rounded-[inherit] size-full">
-        <div className="[word-break:break-word] flex flex-col font-['Segoe_UI:Regular',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-black whitespace-nowrap">
-          <p className="leading-[normal]">90%</p>
-        </div>
-      </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function ItemDaLista17({ checked, disabled, onChange, opacity = 1 }: { checked: boolean; disabled: boolean; onChange: () => void; opacity?: number }) {
-  return (
-    <div className="h-[24px] relative shrink-0 w-[150px]" data-name="item da lista">
-      <div className="content-stretch flex items-center overflow-clip pl-[67px] relative rounded-[inherit] size-full">
-        <Checkbox checked={checked} disabled={disabled} onChange={onChange} opacity={opacity} />
-      </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function TerceiraLinha1({ mobileChecked, sensorChecked, onSensorChange, sensorName, signal }: { mobileChecked: boolean; sensorChecked: boolean; onSensorChange: () => void; sensorName: string; signal: string }) {
-  const opacity = mobileChecked ? 0.25 : 1;
-  return (
-    <div
-      className="bg-white content-stretch flex items-center overflow-clip relative shrink-0 w-full"
-      data-name="terceira linha"
-    >
-      <ItemDaLista3 opacity={opacity} sensorName={sensorName} />
-      <ItemDaLista4 opacity={opacity} signal={signal} />
-      <ItemDaLista17 checked={sensorChecked} disabled={mobileChecked} onChange={onSensorChange} opacity={opacity} />
-    </div>
-  );
-}
-
-function Group3() {
-  return (
-    <div className="absolute inset-[-0.01%_0_0.01%_0]" data-name="Group">
-      <svg className="absolute block inset-0 size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 16 16.0012">
-        <g id="Group">
-          <g id="Vector" />
-          <g id="Group_2">
-            <path clipRule="evenodd" d={svgPaths.p1f61aa00} fill="var(--fill-0, white)" fillRule="evenodd" id="Vector_2" />
-            <path d={svgPaths.p3a40a100} fill="var(--fill-0, #38404D)" id="Vector_3" />
-          </g>
-          <path clipRule="evenodd" d={svgPaths.p38345f00} fill="var(--fill-0, #24AAD7)" fillRule="evenodd" id="Vector_4" />
-        </g>
-      </svg>
-    </div>
-  );
-}
-
-function Camada6() {
-  return (
-    <div className="absolute contents inset-[-0.01%_0_0_0]" data-name="Camada_1">
-      <Group3 />
-    </div>
-  );
-}
-
-function ItemDaLista18({ mac, displayName, isAssociated, onDragOver, onDrop, onRename }: { mac: string; displayName: string; isAssociated: boolean; onDragOver: (e: React.DragEvent) => void; onDrop: (e: React.DragEvent) => void; onRename: (name: string) => void }) {
-  const textColor = isAssociated ? "#007F00" : "black";
-
-  return (
-    <div
-      className="flex-[1_0_0] h-[24px] min-w-px relative"
-      data-name="item da lista"
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-    >
-      <div className="flex flex-row items-center overflow-clip rounded-[inherit] size-full">
-        <div className="content-stretch flex gap-[4px] items-center pl-[6px] pr-[3px] relative size-full">
-          <div className="overflow-clip relative shrink-0 size-[16px]" data-name="app/ícone/seta-menu-suspenso-16px">
-            <div className="-translate-x-1/2 -translate-y-1/2 absolute h-[5px] left-1/2 top-1/2 w-[7px]">
-              <div className="absolute inset-[-10%_-5.84%_-8.51%_-5.84%]">
-                <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 7.81796 5.92562">
-                  <path d={svgPaths.pdbea00} fill="var(--fill-0, #333333)" id="Vector 11" stroke="var(--stroke-0, #333333)" />
-                </svg>
-              </div>
-            </div>
-          </div>
-          <div className="overflow-clip relative shrink-0 size-[16px]" data-name="e2/ícone/16px/keypad-wifi-2">
-            <Camada6 />
-          </div>
-          <div className="flex flex-row items-center gap-[4px] relative shrink-0 whitespace-nowrap">
-            {isAssociated ? (
-              <span className="font-['Segoe_UI:Regular',sans-serif] not-italic text-[12px] leading-[normal]" style={{ color: textColor }}>{displayName}</span>
-            ) : (
-              <>
-                <input
-                  className="bg-transparent border-0 focus:outline-none leading-[normal] p-0 m-0 font-['Segoe_UI:Regular',sans-serif] text-[12px] not-italic"
-                  style={{ color: textColor, width: `${displayName.length || 1}ch` }}
-                  value={displayName}
-                  onChange={(e) => onRename(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                />
-                <span className="font-['Segoe_UI:Regular',sans-serif] not-italic text-[12px] leading-[normal] text-black">[{mac}]</span>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function ItemDaLista19() {
-  return (
-    <div className="h-[24px] relative shrink-0 w-[90px]" data-name="item da lista">
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function ItemDaLista20({ checked, onChange }: { checked: boolean; onChange: () => void }) {
-  return (
-    <div className="h-[24px] relative shrink-0 w-[150px]" data-name="item da lista">
-      <div className="content-stretch flex gap-[6px] items-center overflow-clip pl-[67px] relative rounded-[inherit] size-full">
-        <Checkbox checked={checked} onChange={onChange} />
-        <div className="[word-break:break-word] flex flex-col font-['Segoe_UI:Regular',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-black whitespace-nowrap">
-          <p className="leading-[normal]">(Móvel)</p>
-        </div>
-      </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function QuartaLinha({ mobileChecked, onMobileChange, mac, displayName, isAssociated, onDragOver, onDrop, onRename }: { mobileChecked: boolean; onMobileChange: () => void; mac: string; displayName: string; isAssociated: boolean; onDragOver: (e: React.DragEvent) => void; onDrop: (e: React.DragEvent) => void; onRename: (name: string) => void }) {
-  return (
-    <div className="bg-[#f9f9f9] content-stretch flex items-center overflow-clip relative shrink-0 w-full" data-name="quarta linha">
-      <ItemDaLista18 mac={mac} displayName={displayName} isAssociated={isAssociated} onDragOver={onDragOver} onDrop={onDrop} onRename={onRename} />
-      <ItemDaLista19 />
-      <ItemDaLista20 checked={mobileChecked} onChange={onMobileChange} />
-    </div>
-  );
-}
-
-function Camada7() {
-  return (
-    <div className="absolute contents inset-0" data-name="Camada_1">
-      <svg className="absolute block inset-0 size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 16 16">
-        <g id="Group">
-          <g id="Vector" />
-          <path clipRule="evenodd" d={svgPaths.p5465000} fill="var(--fill-0, white)" fillRule="evenodd" id="Vector_2" />
-          <path clipRule="evenodd" d={svgPaths.p2eaa66c0} fill="var(--fill-0, #24AAD7)" fillRule="evenodd" id="Vector_3" />
-          <path d={svgPaths.p1fa31840} fill="var(--fill-0, #38404D)" id="Vector_4" />
-        </g>
-      </svg>
-    </div>
-  );
-}
-
-function ItemDaLista21() {
-  return (
-    <div className="flex-[1_0_0] h-[24px] min-w-px relative" data-name="item da lista">
-      <div className="flex flex-row items-center overflow-clip rounded-[inherit] size-full">
-        <div className="content-stretch flex gap-[4px] items-center pl-[38px] pr-[3px] relative size-full">
-          <div className="overflow-clip relative shrink-0 size-[16px]" data-name="e2/ícone/16px/sensores">
-            <Camada7 />
-          </div>
-          <div className="[word-break:break-word] flex flex-col font-['Segoe_UI:Regular',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-black whitespace-nowrap">
-            <p className="leading-[normal]">Sensor Financeiro</p>
-          </div>
-        </div>
-      </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function ItemDaLista22() {
-  return (
-    <div className="h-[24px] relative shrink-0 w-[90px]" data-name="item da lista">
-      <div className="content-stretch flex items-center justify-center overflow-clip pl-[6px] pr-[3px] relative rounded-[inherit] size-full">
-        <div className="[word-break:break-word] flex flex-col font-['Segoe_UI:Regular',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-black whitespace-nowrap">
-          <p className="leading-[normal]">86%</p>
-        </div>
-      </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function ItemDaLista23({ checked, disabled, onChange, opacity = 1 }: { checked: boolean; disabled: boolean; onChange: () => void; opacity?: number }) {
-  return (
-    <div className="h-[24px] relative shrink-0 w-[150px]" data-name="item da lista">
-      <div className="content-stretch flex items-center overflow-clip pl-[67px] relative rounded-[inherit] size-full">
-        <Checkbox checked={checked} disabled={disabled} onChange={onChange} opacity={opacity} />
-      </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function QuartaLinha1({ mobileChecked, sensorChecked, onSensorChange, sensorName, signal }: { mobileChecked: boolean; sensorChecked: boolean; onSensorChange: () => void; sensorName: string; signal: string }) {
-  const opacity = mobileChecked ? 0.25 : 1;
-  return (
-    <div
-      className="bg-[#f9f9f9] content-stretch flex items-center overflow-clip relative shrink-0 w-full"
-      data-name="quarta linha"
-    >
-      <ItemDaLista3 opacity={opacity} sensorName={sensorName} />
-      <ItemDaLista4 opacity={opacity} signal={signal} />
-      <ItemDaLista23 checked={sensorChecked} disabled={mobileChecked} onChange={onSensorChange} opacity={opacity} />
-    </div>
-  );
-}
-
-function Group4() {
-  return (
-    <div className="absolute inset-[-0.01%_0_0.01%_0]" data-name="Group">
-      <svg className="absolute block inset-0 size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 16 16.0012">
-        <g id="Group">
-          <g id="Vector" />
-          <g id="Group_2">
-            <path clipRule="evenodd" d={svgPaths.p1f61aa00} fill="var(--fill-0, white)" fillRule="evenodd" id="Vector_2" />
-            <path d={svgPaths.p3a40a100} fill="var(--fill-0, #38404D)" id="Vector_3" />
-          </g>
-          <path clipRule="evenodd" d={svgPaths.p38345f00} fill="var(--fill-0, #24AAD7)" fillRule="evenodd" id="Vector_4" />
-        </g>
-      </svg>
-    </div>
-  );
-}
-
-function Camada8() {
-  return (
-    <div className="absolute contents inset-[-0.01%_0_0_0]" data-name="Camada_1">
-      <Group4 />
-    </div>
-  );
-}
-
-function ItemDaLista24({ mac, displayName, isAssociated, onDragOver, onDrop, onRename }: { mac: string; displayName: string; isAssociated: boolean; onDragOver: (e: React.DragEvent) => void; onDrop: (e: React.DragEvent) => void; onRename: (name: string) => void }) {
-  const textColor = isAssociated ? "#007F00" : "black";
-
-  return (
-    <div
-      className="flex-[1_0_0] h-[24px] min-w-px relative"
-      data-name="item da lista"
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-    >
-      <div className="flex flex-row items-center overflow-clip rounded-[inherit] size-full">
-        <div className="content-stretch flex gap-[4px] items-center pl-[6px] pr-[3px] relative size-full">
-          <div className="overflow-clip relative shrink-0 size-[16px]" data-name="app/ícone/seta-menu-suspenso-16px">
-            <div className="-translate-x-1/2 -translate-y-1/2 absolute h-[5px] left-1/2 top-1/2 w-[7px]">
-              <div className="absolute inset-[-10%_-5.84%_-8.51%_-5.84%]">
-                <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 7.81796 5.92562">
-                  <path d={svgPaths.pdbea00} fill="var(--fill-0, #333333)" id="Vector 11" stroke="var(--stroke-0, #333333)" />
-                </svg>
-              </div>
-            </div>
-          </div>
-          <div className="overflow-clip relative shrink-0 size-[16px]" data-name="e2/ícone/16px/keypad-wifi-2">
-            <Camada8 />
-          </div>
-          <div className="flex flex-row items-center gap-[4px] relative shrink-0 whitespace-nowrap">
-            {isAssociated ? (
-              <span className="font-['Segoe_UI:Regular',sans-serif] not-italic text-[12px] leading-[normal]" style={{ color: textColor }}>{displayName}</span>
-            ) : (
-              <>
-                <input
-                  className="bg-transparent border-0 focus:outline-none leading-[normal] p-0 m-0 font-['Segoe_UI:Regular',sans-serif] text-[12px] not-italic"
-                  style={{ color: textColor, width: `${displayName.length || 1}ch` }}
-                  value={displayName}
-                  onChange={(e) => onRename(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                />
-                <span className="font-['Segoe_UI:Regular',sans-serif] not-italic text-[12px] leading-[normal] text-black">[{mac}]</span>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function ItemDaLista25() {
-  return (
-    <div className="h-[24px] relative shrink-0 w-[90px]" data-name="item da lista">
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function ItemDaLista26({ checked, onChange }: { checked: boolean; onChange: () => void }) {
-  return (
-    <div className="h-[24px] relative shrink-0 w-[150px]" data-name="item da lista">
-      <div className="content-stretch flex gap-[6px] items-center overflow-clip pl-[67px] relative rounded-[inherit] size-full">
-        <Checkbox checked={checked} onChange={onChange} />
-        <div className="[word-break:break-word] flex flex-col font-['Segoe_UI:Regular',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-black whitespace-nowrap">
-          <p className="leading-[normal]">(Móvel)</p>
-        </div>
-      </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function QuintaLinha({ mobileChecked, onMobileChange, mac, displayName, isAssociated, onDragOver, onDrop, onRename }: { mobileChecked: boolean; onMobileChange: () => void; mac: string; displayName: string; isAssociated: boolean; onDragOver: (e: React.DragEvent) => void; onDrop: (e: React.DragEvent) => void; onRename: (name: string) => void }) {
-  return (
-    <div className="bg-white content-stretch flex items-center overflow-clip relative shrink-0 w-full" data-name="quinta linha">
-      <ItemDaLista24 mac={mac} displayName={displayName} isAssociated={isAssociated} onDragOver={onDragOver} onDrop={onDrop} onRename={onRename} />
-      <ItemDaLista25 />
-      <ItemDaLista26 checked={mobileChecked} onChange={onMobileChange} />
-    </div>
-  );
-}
-
-function Camada9() {
-  return (
-    <div className="absolute contents inset-0" data-name="Camada_1">
-      <svg className="absolute block inset-0 size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 16 16">
-        <g id="Group">
-          <g id="Vector" />
-          <path clipRule="evenodd" d={svgPaths.p5465000} fill="var(--fill-0, white)" fillRule="evenodd" id="Vector_2" />
-          <path clipRule="evenodd" d={svgPaths.p2eaa66c0} fill="var(--fill-0, #24AAD7)" fillRule="evenodd" id="Vector_3" />
-          <path d={svgPaths.p1fa31840} fill="var(--fill-0, #38404D)" id="Vector_4" />
-        </g>
-      </svg>
-    </div>
-  );
-}
-
-function ItemDaLista27() {
-  return (
-    <div className="flex-[1_0_0] h-[24px] min-w-px relative" data-name="item da lista">
-      <div className="flex flex-row items-center overflow-clip rounded-[inherit] size-full">
-        <div className="content-stretch flex gap-[4px] items-center pl-[38px] pr-[3px] relative size-full">
-          <div className="overflow-clip relative shrink-0 size-[16px]" data-name="e2/ícone/16px/sensores">
-            <Camada9 />
-          </div>
-          <div className="[word-break:break-word] flex flex-col font-['Segoe_UI:Regular',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-black whitespace-nowrap">
-            <p className="leading-[normal]">Sensor RH</p>
-          </div>
-        </div>
-      </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function ItemDaLista28() {
-  return (
-    <div className="h-[24px] relative shrink-0 w-[90px]" data-name="item da lista">
-      <div className="content-stretch flex items-center justify-center overflow-clip pl-[6px] pr-[3px] relative rounded-[inherit] size-full">
-        <div className="[word-break:break-word] flex flex-col font-['Segoe_UI:Regular',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-black whitespace-nowrap">
-          <p className="leading-[normal]">90%</p>
-        </div>
-      </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function ItemDaLista29({ checked, disabled, onChange, opacity = 1 }: { checked: boolean; disabled: boolean; onChange: () => void; opacity?: number }) {
-  return (
-    <div className="h-[24px] relative shrink-0 w-[150px]" data-name="item da lista">
-      <div className="content-stretch flex items-center overflow-clip pl-[67px] relative rounded-[inherit] size-full">
-        <Checkbox checked={checked} disabled={disabled} onChange={onChange} opacity={opacity} />
-      </div>
-      <div aria-hidden="true" className="absolute border-[#ededed] border-b border-r border-solid inset-0 pointer-events-none" />
-    </div>
-  );
-}
-
-function QuintaLinha1({ mobileChecked, sensorChecked, onSensorChange, sensorName, signal }: { mobileChecked: boolean; sensorChecked: boolean; onSensorChange: () => void; sensorName: string; signal: string }) {
-  const opacity = mobileChecked ? 0.25 : 1;
-  return (
-    <div
-      className="bg-white content-stretch flex items-center overflow-clip relative shrink-0 w-full"
-      data-name="quinta linha"
-    >
-      <ItemDaLista3 opacity={opacity} sensorName={sensorName} />
-      <ItemDaLista4 opacity={opacity} signal={signal} />
-      <ItemDaLista29 checked={sensorChecked} disabled={mobileChecked} onChange={onSensorChange} opacity={opacity} />
-    </div>
-  );
-}
-
-function Conteudo({ visibleDevices = 5, isAdvancedMode = false, draggedDevice, onDragOver, overlayAssociations, setOverlayAssociations, projectDevices, keypadNames, onRenameKeypad }: { visibleDevices?: number; isAdvancedMode?: boolean; draggedDevice?: Device | null; onDragOver?: (e: React.DragEvent) => void; overlayAssociations: Record<string, string>; setOverlayAssociations: React.Dispatch<React.SetStateAction<Record<string, string>>>; projectDevices?: Device[]; keypadNames: Record<string, string>; onRenameKeypad: (networkId: string, name: string) => void }) {
-  const [checkboxes, setCheckboxes] = useState({
-    kp1Mobile: false,
-    kp1Sensor: false,
-    kp1Sensor2: false,
-    kp2Mobile: false,
-    kp2Sensor: false,
-    kp2Sensor2: false,
-    kp3Mobile: false,
-    kp3Sensor: false,
-    kp3Sensor2: false,
-    kp3Sensor3: false,
-    kp4Mobile: false,
-    kp4Sensor: false,
-    kp4Sensor2: false,
-    kp4Sensor3: false,
-    kp5Mobile: false,
-    kp5Sensor: false,
-    kp5Sensor2: false,
-    kp5Sensor3: false,
-  });
-
+  // "(Móvel)" checks every visible sensor of the keypad and locks them
   const handleMobileChange = (kpIndex: number) => {
-    const key = `kp${kpIndex}Mobile` as keyof typeof checkboxes;
-    const sensorData = KEYPAD_SENSORS[kpIndex];
-    const sensorCount = isAdvancedMode ? sensorData.advanced.length : 1;
-    const sensorKeys: string[] = [];
-
-    for (let i = 0; i < sensorCount; i++) {
-      if (i === 0) {
-        sensorKeys.push(`kp${kpIndex}Sensor`);
-      } else {
-        sensorKeys.push(`kp${kpIndex}Sensor${i + 1}`);
-      }
-    }
-
-    setCheckboxes(prev => {
-      const updates: any = {
-        [key]: !prev[key],
-      };
-      if (!prev[key]) {
-        sensorKeys.forEach(sKey => {
-          updates[sKey] = true;
-        });
-      }
-      return { ...prev, ...updates };
-    });
+    setCheckboxes(prev => ({ ...prev, [mobileKey(kpIndex)]: !prev[mobileKey(kpIndex)] }));
   };
 
-  const handleSensorChange = (kpIndex: number, sensorIndex: number = 0) => {
-    const mobileKey = `kp${kpIndex}Mobile` as keyof typeof checkboxes;
-    const sensorKey = (sensorIndex === 0 ? `kp${kpIndex}Sensor` : `kp${kpIndex}Sensor${sensorIndex + 1}`) as keyof typeof checkboxes;
-    if (!checkboxes[mobileKey]) {
-      setCheckboxes(prev => ({
-        ...prev,
-        [sensorKey]: !prev[sensorKey],
-      }));
-    }
+  const handleSensorChange = (kpIndex: number, sensorIndex: number) => {
+    if (checkboxes[mobileKey(kpIndex)]) return;
+    const key = sensorKey(kpIndex, sensorIndex);
+    setCheckboxes(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const getSensors = (kpIndex: number) => {
-    const sensorData = KEYPAD_SENSORS[kpIndex];
-    return isAdvancedMode ? sensorData.advanced : [sensorData.standard];
-  };
+  // A row accepts a drop only if it is free and the dragged KP7 is not used elsewhere
+  // (one-to-one, same rule as the main tree)
+  const canDropOn = (kpIndex: number) =>
+    !!draggedDevice &&
+    draggedDevice.type === 'keypad' &&
+    !overlayAssociations[KEYPADS[kpIndex].networkId] &&
+    !Object.values(overlayAssociations).includes(draggedDevice.id);
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (kpIndex: number) => (e: React.DragEvent) => {
+    if (!canDropOn(kpIndex)) return; // no preventDefault -> "not allowed" cursor
     e.preventDefault();
-    if (onDragOver) onDragOver(e);
+    onDragOver?.(e);
   };
 
   const handleDrop = (kpIndex: number) => (e: React.DragEvent) => {
     e.preventDefault();
-    if (!draggedDevice || draggedDevice.type !== 'keypad') return;
-
-    // One-to-one constraint: each project KP7 can only be associated with one network KP7
-    if (Object.values(overlayAssociations).includes(draggedDevice.id)) return;
-
-    const networkDeviceId = KEYPAD_DATA[kpIndex].networkId;
-    setOverlayAssociations(prev => ({
-      ...prev,
-      [networkDeviceId]: draggedDevice.id,
-    }));
+    if (!draggedDevice || !canDropOn(kpIndex)) return;
+    const networkDeviceId = KEYPADS[kpIndex].networkId;
+    setOverlayAssociations(prev => ({ ...prev, [networkDeviceId]: draggedDevice.id }));
+    // The linked keypad starts with the KP7 name (it can still be renamed afterwards)
+    onResetKeypadName(networkDeviceId);
   };
 
-  const findProjectDevice = (devices: Device[], id: string): Device | null => {
-    for (const device of devices) {
-      if (device.id === id) return device;
-      if (device.children) {
-        const found = findProjectDevice(device.children, id);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-
-  const handleRename = (kpIndex: number, name: string) => {
-    const networkDeviceId = KEYPAD_DATA[kpIndex].networkId;
-    onRenameKeypad(networkDeviceId, name);
-  };
-
-  const getKeypadDisplayInfo = (kpIndex: number) => {
-    const networkDeviceId = KEYPAD_DATA[kpIndex].networkId;
-    const projectDeviceId = overlayAssociations[networkDeviceId];
+  const getKeypadDisplayInfo = (kp: KeypadData) => {
+    const projectDeviceId = overlayAssociations[kp.networkId];
     const isAssociated = !!projectDeviceId;
-    const customName = keypadNames[networkDeviceId]?.trim();
-
-    let displayName: string;
+    const fallback = keypadNames[kp.networkId]?.trim() || KEYPAD_GENERIC_NAME;
     if (isAssociated && projectDevices) {
       const projectDevice = findProjectDevice(projectDevices, projectDeviceId);
-      displayName = projectDevice
-        ? projectDevice.name.replace(/\s*\(CR-KP7-RF\)\s*$/, '')
-        : customName || KEYPAD_GENERIC_NAMES[kpIndex];
-    } else {
-      displayName = customName || KEYPAD_GENERIC_NAMES[kpIndex];
+      if (projectDevice) {
+        return {
+          displayName: keypadNames[kp.networkId] ?? projectDevice.name.replace(/\s*\(CR-KP7-RF\)\s*$/, ''),
+          roomName: findParentRoomName(projectDevices, projectDeviceId),
+          isAssociated,
+        };
+      }
     }
-
-    return { displayName, isAssociated };
+    return { displayName: keypadNames[kp.networkId] ?? fallback, roomName: undefined, isAssociated };
   };
 
   return (
-    <div className="content-stretch flex flex-col items-start overflow-clip relative shrink-0 w-full" data-name="conteúdo">
-      <Cabecalho1 />
-      {visibleDevices >= 1 && (
-        <>
-          <PrimeiraLinha
-            mobileChecked={checkboxes.kp1Mobile}
-            onMobileChange={() => handleMobileChange(1)}
-            mac={KEYPAD_DATA[1].mac}
-            displayName={getKeypadDisplayInfo(1).displayName}
-            isAssociated={getKeypadDisplayInfo(1).isAssociated}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop(1)}
-            onRename={(name) => handleRename(1, name)}
-          />
-          {getSensors(1).map((sensor, idx) => (
-            <PrimeiraLinha1
-              key={idx}
-              mobileChecked={checkboxes.kp1Mobile}
-              sensorChecked={idx === 0 ? checkboxes.kp1Sensor : checkboxes.kp1Sensor2}
-              onSensorChange={() => handleSensorChange(1, idx)}
-              sensorName={sensor.name}
-              signal={sensor.signal}
+    <div className="flex flex-col w-full">
+      <TableHeader />
+      {KEYPADS.slice(0, visibleDevices).map((kp, kpIndex) => {
+        const { displayName, roomName, isAssociated } = getKeypadDisplayInfo(kp);
+        const mobileChecked = !!checkboxes[mobileKey(kpIndex)];
+        return (
+          <div key={kp.networkId} className="flex flex-col w-full">
+            <KeypadRow
+              mac={kp.mac}
+              displayName={displayName}
+              roomName={roomName}
+              isAssociated={isAssociated}
+              isAvailable={canDropOn(kpIndex)}
+              mobileChecked={mobileChecked}
+              onMobileChange={() => handleMobileChange(kpIndex)}
+              onDragOver={handleDragOver(kpIndex)}
+              onDrop={handleDrop(kpIndex)}
+              onRename={(name) => onRenameKeypad(kp.networkId, name)}
             />
-          ))}
-        </>
-      )}
-      {visibleDevices >= 2 && (
-        <>
-          <SegundaLinha
-            mobileChecked={checkboxes.kp2Mobile}
-            onMobileChange={() => handleMobileChange(2)}
-            mac={KEYPAD_DATA[2].mac}
-            displayName={getKeypadDisplayInfo(2).displayName}
-            isAssociated={getKeypadDisplayInfo(2).isAssociated}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop(2)}
-            onRename={(name) => handleRename(2, name)}
-          />
-          {getSensors(2).map((sensor, idx) => (
-            <SegundaLinha1
-              key={idx}
-              mobileChecked={checkboxes.kp2Mobile}
-              sensorChecked={idx === 0 ? checkboxes.kp2Sensor : checkboxes.kp2Sensor2}
-              onSensorChange={() => handleSensorChange(2, idx)}
-              sensorName={sensor.name}
-              signal={sensor.signal}
-            />
-          ))}
-        </>
-      )}
-      {visibleDevices >= 3 && (
-        <>
-          <TerceiraLinha
-            mobileChecked={checkboxes.kp3Mobile}
-            onMobileChange={() => handleMobileChange(3)}
-            mac={KEYPAD_DATA[3].mac}
-            displayName={getKeypadDisplayInfo(3).displayName}
-            isAssociated={getKeypadDisplayInfo(3).isAssociated}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop(3)}
-            onRename={(name) => handleRename(3, name)}
-          />
-          {getSensors(3).map((sensor, idx) => {
-            const sensorChecked = idx === 0 ? checkboxes.kp3Sensor : idx === 1 ? checkboxes.kp3Sensor2 : checkboxes.kp3Sensor3;
-            return (
-              <TerceiraLinha1
-                key={idx}
-                mobileChecked={checkboxes.kp3Mobile}
-                sensorChecked={sensorChecked}
-                onSensorChange={() => handleSensorChange(3, idx)}
-                sensorName={sensor.name}
-                signal={sensor.signal}
+            {getSensors(kp).map((sensor, sensorIndex) => (
+              <SensorRow
+                key={sensorIndex}
+                sensor={sensor}
+                checked={mobileChecked || !!checkboxes[sensorKey(kpIndex, sensorIndex)]}
+                disabled={mobileChecked}
+                onChange={() => handleSensorChange(kpIndex, sensorIndex)}
               />
-            );
-          })}
-        </>
-      )}
-      {visibleDevices >= 4 && (
-        <>
-          <QuartaLinha
-            mobileChecked={checkboxes.kp4Mobile}
-            onMobileChange={() => handleMobileChange(4)}
-            mac={KEYPAD_DATA[4].mac}
-            displayName={getKeypadDisplayInfo(4).displayName}
-            isAssociated={getKeypadDisplayInfo(4).isAssociated}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop(4)}
-            onRename={(name) => handleRename(4, name)}
-          />
-          {getSensors(4).map((sensor, idx) => {
-            const sensorChecked = idx === 0 ? checkboxes.kp4Sensor : idx === 1 ? checkboxes.kp4Sensor2 : checkboxes.kp4Sensor3;
-            return (
-              <QuartaLinha1
-                key={idx}
-                mobileChecked={checkboxes.kp4Mobile}
-                sensorChecked={sensorChecked}
-                onSensorChange={() => handleSensorChange(4, idx)}
-                sensorName={sensor.name}
-                signal={sensor.signal}
-              />
-            );
-          })}
-        </>
-      )}
-      {visibleDevices >= 5 && (
-        <>
-          <QuintaLinha
-            mobileChecked={checkboxes.kp5Mobile}
-            onMobileChange={() => handleMobileChange(5)}
-            mac={KEYPAD_DATA[5].mac}
-            displayName={getKeypadDisplayInfo(5).displayName}
-            isAssociated={getKeypadDisplayInfo(5).isAssociated}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop(5)}
-            onRename={(name) => handleRename(5, name)}
-          />
-          {getSensors(5).map((sensor, idx) => {
-            const sensorChecked = idx === 0 ? checkboxes.kp5Sensor : idx === 1 ? checkboxes.kp5Sensor2 : checkboxes.kp5Sensor3;
-            return (
-              <QuintaLinha1
-                key={idx}
-                mobileChecked={checkboxes.kp5Mobile}
-                sensorChecked={sensorChecked}
-                onSensorChange={() => handleSensorChange(5, idx)}
-                sensorName={sensor.name}
-                signal={sensor.signal}
-              />
-            );
-          })}
-        </>
-      )}
-    </div>
-  );
-}
-
-function Tabela1({ visibleDevices, isAdvancedMode, draggedDevice, onDragOver, overlayAssociations, setOverlayAssociations, projectDevices, keypadNames, onRenameKeypad }: { visibleDevices?: number; isAdvancedMode?: boolean; draggedDevice?: Device | null; onDragOver?: (e: React.DragEvent) => void; overlayAssociations: Record<string, string>; setOverlayAssociations: React.Dispatch<React.SetStateAction<Record<string, string>>>; projectDevices?: Device[]; keypadNames: Record<string, string>; onRenameKeypad: (networkId: string, name: string) => void }) {
-  return (
-    <div className="bg-white content-stretch flex flex-[1_0_0] flex-col items-start min-w-px overflow-clip relative" data-name="tabela">
-      <Conteudo
-        visibleDevices={visibleDevices}
-        isAdvancedMode={isAdvancedMode}
-        draggedDevice={draggedDevice}
-        onDragOver={onDragOver}
-        overlayAssociations={overlayAssociations}
-        setOverlayAssociations={setOverlayAssociations}
-        projectDevices={projectDevices}
-        keypadNames={keypadNames}
-        onRenameKeypad={onRenameKeypad}
-      />
-    </div>
-  );
-}
-
-function Tabela({ visibleDevices, isAdvancedMode, draggedDevice, onDragOver, overlayAssociations, setOverlayAssociations, projectDevices, keypadNames, onRenameKeypad }: { visibleDevices?: number; isAdvancedMode?: boolean; draggedDevice?: Device | null; onDragOver?: (e: React.DragEvent) => void; overlayAssociations: Record<string, string>; setOverlayAssociations: React.Dispatch<React.SetStateAction<Record<string, string>>>; projectDevices?: Device[]; keypadNames: Record<string, string>; onRenameKeypad: (networkId: string, name: string) => void }) {
-  return (
-    <div className="bg-white flex-[1_0_0] min-h-px relative w-full border border-[#bebebe]" data-name="tabela">
-      <div className="overflow-y-auto size-full">
-        <Tabela1
-          visibleDevices={visibleDevices}
-          isAdvancedMode={isAdvancedMode}
-          draggedDevice={draggedDevice}
-          onDragOver={onDragOver}
-          overlayAssociations={overlayAssociations}
-          setOverlayAssociations={setOverlayAssociations}
-          projectDevices={projectDevices}
-          keypadNames={keypadNames}
-          onRenameKeypad={onRenameKeypad}
-        />
-      </div>
-    </div>
-  );
-}
-
-function Botoes({ overlayAssociations, onConcluir }: { overlayAssociations: Record<string, string>; onConcluir?: (associations: Record<string, string>) => void }) {
-  const handleClick = () => {
-    if (onConcluir) {
-      onConcluir(overlayAssociations);
-    }
-  };
-
-  return (
-    <div className="content-stretch flex gap-[12px] items-center justify-end relative shrink-0 w-full" data-name="botões">
-      <button
-        className="bg-gradient-to-b from-[#eee] h-[25px] relative rounded-[2px] shrink-0 to-[#d9d9d9] w-[71px] cursor-pointer"
-        data-name="e2/botão-principal"
-        onClick={handleClick}
-      >
-        <div className="content-stretch flex items-center justify-center overflow-clip px-[12px] relative rounded-[inherit] size-full">
-          <div className="[word-break:break-word] flex flex-col font-['Segoe_UI:Regular',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[#323232] text-[12px] text-center whitespace-nowrap">
-            <p className="leading-[normal]">Concluir</p>
+            ))}
           </div>
-        </div>
-        <div aria-hidden="true" className="absolute border border-[#b5b5b5] border-solid inset-0 pointer-events-none rounded-[2px]" />
-      </button>
+        );
+      })}
     </div>
   );
 }
 
-function ControlesRf({ visibleDevices, isAdvancedMode, onToggleMode, draggedDevice, onDragOver, overlayAssociations, setOverlayAssociations, projectDevices, keypadNames, onRenameKeypad, onConcluir }: { visibleDevices?: number; isAdvancedMode: boolean; onToggleMode: () => void; draggedDevice?: Device | null; onDragOver?: (e: React.DragEvent) => void; overlayAssociations: Record<string, string>; setOverlayAssociations: React.Dispatch<React.SetStateAction<Record<string, string>>>; projectDevices?: Device[]; keypadNames: Record<string, string>; onRenameKeypad: (networkId: string, name: string) => void; onConcluir?: (associations: Record<string, string>) => void }) {
-  return (
-    <div className="flex-[1_0_0] min-h-px relative w-full" data-name="controles rf">
-      <div className="content-stretch flex flex-col gap-[12px] items-start p-[16px] relative size-full">
-        <Cabecalho isAdvancedMode={isAdvancedMode} onToggleMode={onToggleMode} />
-        <Tabela
-          visibleDevices={visibleDevices}
-          isAdvancedMode={isAdvancedMode}
-          draggedDevice={draggedDevice}
-          onDragOver={onDragOver}
-          overlayAssociations={overlayAssociations}
-          setOverlayAssociations={setOverlayAssociations}
-          projectDevices={projectDevices}
-          keypadNames={keypadNames}
-          onRenameKeypad={onRenameKeypad}
-        />
-        <Botoes overlayAssociations={overlayAssociations} onConcluir={onConcluir} />
-      </div>
-    </div>
-  );
+// ─── Window ──────────────────────────────────────────────────────────────────
+
+interface E2CrKp7RfProps {
+  visibleDevices?: number;
+  onClose?: () => void;
+  onConcluir?: (associations: Record<string, string>, keypadNames: Record<string, string>) => void;
+  draggedDevice?: Device | null;
+  onDragOver?: (e: React.DragEvent) => void;
+  projectDevices?: Device[];
+  baseAssociations?: Record<string, string>;
+  baseKeypadNames?: Record<string, string>;
+  onOverlayAssociationsChange?: (associations: Record<string, string>) => void;
 }
 
-export default function E2CrKp7Rf({ visibleDevices = 5, onClose, onConcluir, draggedDevice, onDragOver, projectDevices, baseAssociations, baseKeypadNames, onKeypadNamesChange, onOverlayAssociationsChange }: { visibleDevices?: number; onClose?: () => void; onConcluir?: (associations: Record<string, string>) => void; draggedDevice?: Device | null; onDragOver?: (e: React.DragEvent) => void; projectDevices?: Device[]; baseAssociations?: Record<string, string>; baseKeypadNames?: Record<string, string>; onKeypadNamesChange?: (names: Record<string, string>) => void; onOverlayAssociationsChange?: (associations: Record<string, string>) => void }) {
+export default function E2CrKp7Rf({ visibleDevices = KEYPADS.length, onClose, onConcluir, draggedDevice, onDragOver, projectDevices, baseAssociations, baseKeypadNames, onOverlayAssociationsChange }: E2CrKp7RfProps) {
   const [isAdvancedMode, setIsAdvancedMode] = useState(false);
   const [overlayAssociations, setOverlayAssociations] = useState<Record<string, string>>(() => getOverlayAssociationsFromBase(baseAssociations));
   const [keypadNames, setKeypadNames] = useState<Record<string, string>>(baseKeypadNames || {});
@@ -1406,55 +387,59 @@ export default function E2CrKp7Rf({ visibleDevices = 5, onClose, onConcluir, dra
   }, [baseKeypadNames]);
 
   useEffect(() => {
-    if (onKeypadNamesChange) {
-      onKeypadNamesChange(keypadNames);
-    }
-  }, [keypadNames, onKeypadNamesChange]);
-
-  useEffect(() => {
-    if (onOverlayAssociationsChange) {
-      onOverlayAssociationsChange(overlayAssociations);
-    }
+    onOverlayAssociationsChange?.(overlayAssociations);
   }, [overlayAssociations, onOverlayAssociationsChange]);
 
   return (
-    <div className="bg-[#f4f4f4] relative rounded-[8px] size-full" data-name="E2 - CR-KP7-RF">
-      <div className="content-stretch flex flex-col items-center overflow-clip relative rounded-[inherit] size-full">
-        <div className="bg-[#1d242c] h-[40px] relative shrink-0 w-full" data-name="e2/cabeçalho-da-janela">
-          <div className="flex flex-row items-center overflow-clip rounded-[inherit] size-full">
-            <div className="content-stretch flex items-center px-[16px] py-[8px] relative size-full">
-              <AreaDoTexto />
-            </div>
-          </div>
-        </div>
-        <ControlesRf
-          visibleDevices={visibleDevices}
-          isAdvancedMode={isAdvancedMode}
-          onToggleMode={() => setIsAdvancedMode(!isAdvancedMode)}
-          draggedDevice={draggedDevice}
-          onDragOver={onDragOver}
-          overlayAssociations={overlayAssociations}
-          setOverlayAssociations={setOverlayAssociations}
-          projectDevices={projectDevices}
-          keypadNames={keypadNames}
-          onRenameKeypad={(networkId, name) => setKeypadNames(prev => ({ ...prev, [networkId]: name }))}
-          onConcluir={onConcluir}
-        />
-        <button
-          className="absolute block cursor-pointer right-0 size-[32px] top-[4px]"
-          data-name="e2/ícone/16px/fechar"
-          onClick={onClose}
-        >
-          <div className="absolute inset-[37.5%]" data-name="Vector">
-            <div className="absolute inset-[-4.42%]">
-              <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 8.70711 8.70711">
-                <path d={svgPaths.p35344300} id="Vector" stroke="var(--stroke-0, #9B9B9B)" />
-              </svg>
-            </div>
-          </div>
-        </button>
+    <div className="relative size-full bg-[#f4f4f4] rounded-[8px] overflow-clip flex flex-col" data-name="E2 - CR-KP7-RF">
+      {/* e2/cabeçalho-da-janela */}
+      <div className="bg-[#1d242c] h-10 px-4 py-2 flex items-center shrink-0">
+        <p className={`text-[18px] leading-normal ${FONT} font-bold text-white uppercase whitespace-nowrap`}>CR-KP7-RF</p>
       </div>
-      <div aria-hidden="true" className="absolute border border-[#bebebe] border-solid inset-0 pointer-events-none rounded-[8px]" />
+
+      {/* controles rf */}
+      <div className="flex-1 min-h-px flex flex-col gap-3 p-3">
+        <div className="h-[42px] flex items-center justify-between shrink-0">
+          <div className={`flex items-center gap-1 text-[14px] leading-normal ${FONT} font-bold text-black whitespace-nowrap`}>
+            <p>Inclusão de CR-KP7-RF</p>
+            <p>(Buscando dispositivos...)</p>
+          </div>
+          <E2Button label={isAdvancedMode ? 'Modo padrão' : 'Modo avançado'} onClick={() => setIsAdvancedMode(v => !v)} />
+        </div>
+
+        <div className="relative flex-1 min-h-px flex">
+        <div aria-hidden="true" className="absolute inset-0 border border-[#bebebe] pointer-events-none z-20" />
+        <div className="e2-scroll flex-1 min-w-px bg-white overflow-y-scroll">
+          <Conteudo
+            visibleDevices={visibleDevices}
+            isAdvancedMode={isAdvancedMode}
+            draggedDevice={draggedDevice}
+            onDragOver={onDragOver}
+            overlayAssociations={overlayAssociations}
+            setOverlayAssociations={setOverlayAssociations}
+            projectDevices={projectDevices}
+            keypadNames={keypadNames}
+            onRenameKeypad={(networkId, name) => setKeypadNames(prev => ({ ...prev, [networkId]: name }))}
+            onResetKeypadName={(networkId) => setKeypadNames(prev => {
+              const next = { ...prev };
+              delete next[networkId];
+              return next;
+            })}
+          />
+        </div>
+        </div>
+
+        <div className="flex items-center justify-end shrink-0">
+          <E2Button label="Concluir" onClick={() => onConcluir?.(overlayAssociations, keypadNames)} />
+        </div>
+      </div>
+
+      {/* e2/ícone/16px/fechar */}
+      <button className="absolute right-0 top-1 block size-8 cursor-pointer" onClick={onClose}>
+        <img src={iconFecharJanela} alt="Fechar" className="block size-8" />
+      </button>
+
+      <div aria-hidden="true" className="absolute inset-0 rounded-[8px] border border-[#bebebe] pointer-events-none" />
     </div>
   );
 }
