@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Checkbox from '../../app/components/Checkbox';
 
 // Assets exported from Figma — Embrace Desktop › "E2 - CR-KP7-RF" (node 14348:159567)
@@ -377,14 +377,44 @@ export default function E2CrKp7Rf({ visibleDevices = KEYPADS.length, onClose, on
   const [isAdvancedMode, setIsAdvancedMode] = useState(false);
   const [overlayAssociations, setOverlayAssociations] = useState<Record<string, string>>(() => getOverlayAssociationsFromBase(baseAssociations));
   const [keypadNames, setKeypadNames] = useState<Record<string, string>>(baseKeypadNames || {});
+  // Last base state seen, to tell what was done in this window (pending) from what came from the tree
+  const prevBaseRef = useRef({ associations: getOverlayAssociationsFromBase(baseAssociations), names: baseKeypadNames || {} });
 
+  // The tree changed while the window is open (link, Desvincular, Desassociar): take the new base,
+  // but keep the links and names pending in this window unless they now conflict with the tree
   useEffect(() => {
-    setOverlayAssociations(getOverlayAssociationsFromBase(baseAssociations));
-  }, [baseAssociations]);
+    const prevBase = prevBaseRef.current;
+    const base = getOverlayAssociationsFromBase(baseAssociations);
+    const baseNames = baseKeypadNames || {};
+    prevBaseRef.current = { associations: base, names: baseNames };
+    const newlyLinked = new Set(Object.keys(base).filter(id => base[id] !== prevBase.associations[id]));
 
-  useEffect(() => {
-    setKeypadNames(baseKeypadNames || {});
-  }, [baseKeypadNames]);
+    setOverlayAssociations(prev => {
+      const next = { ...base };
+      const usedKp7 = new Set(Object.values(base));
+      for (const [networkId, projectId] of Object.entries(prev)) {
+        if (prevBase.associations[networkId] === projectId) continue; // came from the tree, not pending
+        if (networkId in next || usedKp7.has(projectId)) continue; // conflicts with a link made in the tree
+        next[networkId] = projectId;
+        usedKp7.add(projectId);
+      }
+      return next;
+    });
+
+    setKeypadNames(prev => {
+      const next = { ...baseNames };
+      // Names cleared in this window (link made here) stay cleared
+      for (const networkId of Object.keys(prevBase.names)) {
+        if (!(networkId in prev)) delete next[networkId];
+      }
+      // Names typed here survive, except on keypads the tree has just linked (they take the KP7 name)
+      for (const [networkId, name] of Object.entries(prev)) {
+        if (prevBase.names[networkId] === name || newlyLinked.has(networkId)) continue;
+        next[networkId] = name;
+      }
+      return next;
+    });
+  }, [baseAssociations, baseKeypadNames]);
 
   useEffect(() => {
     onOverlayAssociationsChange?.(overlayAssociations);

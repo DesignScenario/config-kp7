@@ -13,7 +13,6 @@ import iconCheckboxOff from '../imports/icons/checkbox-off.svg';
 import iconSetaMenuSuspenso from '../imports/icons/seta-menu-suspenso.svg';
 
 // Taskbar icons (32px)
-import iconInformacoesDoProjeto from '../imports/icons/tarefa-informacoes-do-projeto.svg';
 import iconEstrutura from '../imports/icons/tarefa-estrutura.svg';
 import iconEquipamentos from '../imports/icons/tarefa-equipamentos.svg';
 import iconProgramacao from '../imports/icons/tarefa-programacao.svg';
@@ -28,6 +27,9 @@ import iconZigbee from '../imports/icons/acao-zigbee.svg';
 import iconProcurarRedes from '../imports/icons/acao-procurar-redes.svg';
 import iconProcurarDispositivos from '../imports/icons/acao-procurar-dispositivos.svg';
 import iconAtualizarFirmwares from '../imports/icons/acao-atualizar-firmwares.svg';
+import iconDaliBase from '../imports/icons/acao-dali-base.svg';
+import iconDaliLampada from '../imports/icons/acao-dali-lampada.svg';
+import iconDaliLinha from '../imports/icons/acao-dali-linha.svg';
 
 // Tree icons (16px)
 import iconProjeto from '../imports/icons/arvore-projeto.svg';
@@ -49,6 +51,9 @@ interface Device {
   isAssociated: boolean;
   children?: Device[];
 }
+
+const OVERLAY_SIZE = 650;
+const OVERLAY_HEADER_HEIGHT = 40;
 
 export default function App() {
   const [currentMode, setCurrentMode] = useState<'programacao' | 'teste'>('programacao');
@@ -99,22 +104,6 @@ export default function App() {
     return null;
   };
 
-  const findParentRoom = (devices: Device[], targetId: string): Device | null => {
-    for (const device of devices) {
-      if (device.type === 'room' && device.children) {
-        const found = device.children.find(child => child.id === targetId);
-        if (found) return device;
-        const nestedFound = findParentRoom(device.children, targetId);
-        if (nestedFound) return nestedFound;
-      }
-      if (device.children) {
-        const found = findParentRoom(device.children, targetId);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-
   const isProjectDeviceAssociated = (projectDeviceId: string): boolean => {
     return Object.values(associations).includes(projectDeviceId) ||
            Object.values(pendingOverlayAssociations).includes(projectDeviceId);
@@ -130,9 +119,13 @@ export default function App() {
     };
     const handleMouseMove = (ev: MouseEvent) => {
       if (overlayDragRef.current) {
+        // Keep part of the header on screen so the window can always be dragged back
+        const minVisible = 80;
+        const x = overlayDragRef.current.overlayX + ev.clientX - overlayDragRef.current.mouseX;
+        const y = overlayDragRef.current.overlayY + ev.clientY - overlayDragRef.current.mouseY;
         setOverlayPos({
-          x: overlayDragRef.current.overlayX + ev.clientX - overlayDragRef.current.mouseX,
-          y: overlayDragRef.current.overlayY + ev.clientY - overlayDragRef.current.mouseY
+          x: Math.min(Math.max(x, minVisible - OVERLAY_SIZE), window.innerWidth - minVisible),
+          y: Math.min(Math.max(y, 0), window.innerHeight - OVERLAY_HEADER_HEIGHT)
         });
       }
     };
@@ -209,8 +202,9 @@ export default function App() {
   };
 
   const getDeviceName = (netDeviceId: string, mac: string, baseType: string): string => {
-    // Priority: name typed in the CR-KP7-RF window (also allowed after the link),
-    // then the linked project KP7 name, then the generic "Keypad RF N"
+    // Custom name of a free keypad (renamed in the CR-KP7-RF window), then the linked
+    // project KP7 name, then the generic "Keypad RF N". Linking always clears the custom
+    // name, so a linked keypad shows the KP7 name (REGRAS §8).
     const customName = keypadCustomNames[netDeviceId]?.trim();
     if (customName) return `${customName} (${baseType}) [${mac}]`;
     const genericName = NETWORK_KEYPAD_GENERIC_NAMES[netDeviceId] || baseType;
@@ -404,7 +398,9 @@ export default function App() {
     if (!isProjectTree && (device.type === 'sensor' || device.id === 'controles-rf')) {
       const position = getContextMenuPosition(e.clientX, e.clientY, 145, 33);
       setContextMenu({ x: position.x, y: position.y, deviceId: device.id, type: 'inclusion' });
-    } else if (device.type === 'keypad' && isProjectTree && device.isAssociated) {
+    } else if (device.type === 'keypad' && isProjectTree && device.associatedId) {
+      // Only a concluded link can be undone here; a link still pending in the
+      // CR-KP7-RF window is undone by closing the window (X / Esc)
       const position = getContextMenuPosition(e.clientX, e.clientY, 90, 33);
       setContextMenu({ x: position.x, y: position.y, deviceId: device.id, type: 'project' });
     } else if (device.type === 'keypad' && !isProjectTree) {
@@ -451,8 +447,8 @@ export default function App() {
     if (contextMenu?.type === 'inclusion') {
       setContextMenu(null);
       setOverlayPos({
-        x: Math.max(0, window.innerWidth / 2 - 325),
-        y: Math.max(0, window.innerHeight / 2 - 325)
+        x: Math.max(0, window.innerWidth / 2 - OVERLAY_SIZE / 2),
+        y: Math.max(0, window.innerHeight / 2 - OVERLAY_SIZE / 2)
       });
       setPendingOverlayAssociations({});
       setShowOverlay(true);
@@ -556,13 +552,12 @@ export default function App() {
           <MenuButton label="Preferências" />
           <MenuButton label="Sistema" />
         </div>
-        <MenuButton label="Login designscenario1@gmail.com:design01@scenario.ind.br" />
+        <MenuButton label="Login usuario@exemplo.com" />
       </div>
 
       {/* Task Bar — e2/barra/barra-de-tarefas */}
       <div className="bg-[#ececec] border-r border-[#cfcfcf] h-[70px] pr-[2px] flex items-center gap-[46px] shrink-0">
         <div className="flex gap-[2px] h-full items-center">
-          <TaskButton icon="info" label="Informações do Projeto" />
           <TaskButton icon="structure" label="Estrutura" />
           <TaskButton icon="equipment" label="Equipamentos" />
           <TaskButton icon="programming" label="Programação" />
@@ -601,20 +596,19 @@ export default function App() {
         <Tab label="Licença" />
       </div>
 
-      {/* Action Buttons — menu de ações */}
+      {/* Action Buttons — menu de ações (Figma 14528:157038) */}
       <div className="bg-[#f4f4f4] h-[51px] pl-1 pt-[5px] flex items-start shrink-0">
         <div className="flex items-center gap-[7px]">
           <div className="flex items-center gap-1">
             <ActionButton icon="modo-programacao" label="Modo Programação" active={currentMode === 'programacao'} onClick={() => changeMode('programacao')} />
             <ActionButton icon="modo-teste" label="Modo Teste" active={currentMode === 'teste'} onClick={() => changeMode('teste')} />
-            <ActionButton icon="zigbee" label="Zigbee" />
-          </div>
-          <div className="w-px h-[42px] bg-[#cfcfcf] shrink-0" />
-          <div className="flex items-center gap-1">
             <ActionButton icon="procurar-redes" label={'Procurar\nRedes'} />
-            <ActionButton icon="procurar-dispositivos" label="Procurar dispositivos" />
+            <ActionButton icon="procurar-dispositivos" label="Procurar Dispositivos" />
             <ActionButton icon="atualizar-firmwares" label={'Atualizar\nFirmwares'} />
           </div>
+          <div className="w-px h-[42px] bg-[#cfcfcf] shrink-0" />
+          <ActionButton icon="zigbee" label="Zigbee" disabled />
+          <ActionButton icon="dali" label="DALI" />
         </div>
       </div>
 
@@ -727,7 +721,7 @@ export default function App() {
       {showOverlay && (
         <div
           className="fixed z-50"
-          style={{ left: overlayPos.x, top: overlayPos.y, width: 650, height: 650, pointerEvents: 'auto' }}
+          style={{ left: overlayPos.x, top: overlayPos.y, width: OVERLAY_SIZE, height: OVERLAY_SIZE, pointerEvents: 'auto' }}
         >
           {/* Drag handle covers the header area, leaving the close button accessible */}
           <div
@@ -961,8 +955,6 @@ function TaskButton({ icon, label, active }: TaskButtonProps) {
 function TaskIcon({ type }: { type: string }) {
   const getIconSrc = () => {
     switch (type) {
-      case 'info':
-        return iconInformacoesDoProjeto;
       case 'structure':
         return iconEstrutura;
       case 'equipment':
@@ -1003,15 +995,18 @@ function Tab({ label, active }: { label: string; active?: boolean }) {
   );
 }
 
-function ActionButton({ icon, label, active, onClick }: { icon: string; label: string; active?: boolean; onClick?: () => void }) {
+function ActionButton({ icon, label, active, disabled, onClick }: { icon: string; label: string; active?: boolean; disabled?: boolean; onClick?: () => void }) {
   return (
     <div
-      className={`h-[42px] w-[120px] px-2 flex items-center justify-center gap-1 overflow-clip shrink-0 cursor-pointer ${
-        active
-          ? 'bg-gradient-to-b from-[#f5ad7d] to-[#f5d59d] border border-[#d8973e] shadow-[0px_1px_1px_0px_rgba(216,151,62,0.5)]'
-          : 'drop-shadow-[0px_1px_0.5px_rgba(201,207,210,0.5)]'
+      className={`h-[42px] w-[120px] px-2 flex items-center justify-center gap-1 overflow-clip shrink-0 ${
+        disabled
+          ? 'bg-[#f0f0f0] opacity-40 shadow-[0px_1px_1px_0px_rgba(201,207,210,0.5)] cursor-default'
+          : active
+            ? 'bg-gradient-to-b from-[#f5ad7d] to-[#f5d59d] border border-[#d8973e] shadow-[0px_1px_1px_0px_rgba(216,151,62,0.5)] cursor-pointer'
+            : 'drop-shadow-[0px_1px_0.5px_rgba(201,207,210,0.5)] cursor-pointer'
       }`}
-      onClick={onClick}
+      aria-disabled={disabled || undefined}
+      onClick={disabled ? undefined : onClick}
     >
       <div className="size-7 relative shrink-0 overflow-clip">
         <ActionIcon type={icon} />
@@ -1022,6 +1017,17 @@ function ActionButton({ icon, label, active, onClick }: { icon: string; label: s
 }
 
 function ActionIcon({ type }: { type: string }) {
+  // DALI (Figma 10736:97982) is made of three layers positioned inside the 28px box
+  if (type === 'dali') {
+    return (
+      <>
+        <img src={iconDaliBase} alt="" className="absolute block left-0 top-[18.67px] w-[28px] h-[9.33px]" />
+        <img src={iconDaliLampada} alt="" className="absolute block left-[3.5px] top-0 size-[21px]" />
+        <img src={iconDaliLinha} alt="" className="absolute block left-[8.75px] top-[7.875px] w-[10.5px] h-[1.3125px]" />
+      </>
+    );
+  }
+
   const getIconSrc = () => {
     switch (type) {
       case 'modo-programacao':

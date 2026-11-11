@@ -26,6 +26,10 @@ node tests/e2e/cdp.mjs scenario-g.js # um cenário
 | `scenario-f.js` | Menu do sensor abre a pop-up |
 | `scenario-g.js` | Cores no arraste, ambiente, renomear vinculado (projeto e rede), tamanho e hover dos menus |
 | `scenario-h.js` | Um espaço entre o nome e o sufixo, seleção total ao clicar no nome |
+| `scenario-i.js` | Árvore muda com a pop-up aberta (pendentes preservados, conflito), sem Desvincular em KP7 pendente, limite do arraste da pop-up, Login sem e-mail real |
+| `scenario-j.js` | Barra de tarefas sem "Informações do Projeto", ordem e posições do menu de ações, Zigbee desabilitado, ícone DALI |
+
+**Captura para comparar com o Figma:** se o cenário definir `window.__shot = {x, y, width, height}`, rodar com a variável `SHOT_PATH` salva um PNG (escala 2x) da região. Exemplo em PowerShell: `$env:SHOT_PATH="menu.png"; node tests/e2e/cdp.mjs scenario-j.js`.
 
 **Falhas conhecidas:**
 - **B8:** o Modo Teste usa dados fixos.
