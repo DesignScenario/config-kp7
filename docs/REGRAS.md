@@ -4,7 +4,10 @@ Este documento é a fonte da verdade do comportamento esperado do protótipo. Ma
 
 ## 1. Modos
 
-- A barra de ações tem **Modo Programação**, que é a tela principal, e **Modo Teste**.
+- A barra de tarefas começa em **Estrutura** (não há "Informações do Projeto").
+- O menu de ações segue o Figma `14528:157038`: Modo Programação · Modo Teste · Procurar Redes · Procurar Dispositivos · Atualizar Firmwares │ Zigbee · DALI.
+  - Só **Modo Programação**, que é a tela principal, e **Modo Teste** têm ação.
+  - **Zigbee** fica desabilitado (opacidade 40%, sem clique). **DALI** fica habilitado, mas sem ação.
 - Sair do Modo Programação fecha a pop-up CR-KP7-RF, descartando o que não foi concluído, e fecha o menu de contexto.
 - Ao voltar para o Modo Programação, vínculos e nomes são preservados.
 - O Modo Teste mostra dados **fixos** e não reflete o estado real (pendência).
@@ -69,7 +72,7 @@ O componente é `ContextMenu`, com estilo e2:
 |---|---|---|
 | Sensor na rede | Inclusão de CR-KP7-RF | Abre a pop-up |
 | Pasta Controles CR-KP7-RF | Inclusão de CR-KP7-RF | Abre a pop-up |
-| KP7 **vinculado** no projeto | Desvincular | Desfaz o vínculo; o keypad continua na rede |
+| KP7 **vinculado** no projeto (vínculo concluído; pendente na pop-up não tem menu) | Desvincular | Desfaz o vínculo; o keypad continua na rede |
 | Keypad na rede | Desassociar | Desfaz o vínculo e **remove** o keypad da rede até a próxima inclusão |
 
 O menu fecha com um clique fora ou com **Esc**.
@@ -77,7 +80,7 @@ O menu fecha com um clique fora ou com **Esc**.
 ## 7. Pop-up CR-KP7-RF (inclusão)
 
 **Abertura e busca**
-- Abre centralizada, em 650×650, e pode ser arrastada pelo cabeçalho.
+- Abre centralizada, em 650×650, e pode ser arrastada pelo cabeçalho. Parte do cabeçalho fica sempre na tela (80px na horizontal, 40px na vertical).
 - A busca é simulada: revela os 6 keypads, um a cada 1,5s.
 
 **Estrutura da tabela**
@@ -98,6 +101,10 @@ O menu fecha com um clique fora ou com **Esc**.
 **Concluir e cancelar**
 - **Concluir** aplica os vínculos e os nomes e (re)inclui na rede todos os keypads encontrados, inclusive os desassociados antes.
 - **X ou Esc** descartam vínculos e nomes pendentes.
+
+**Árvore muda com a pop-up aberta** (vincular, Desvincular ou Desassociar)
+- Os vínculos e nomes pendentes na pop-up são mantidos.
+- Se a árvore vincular o mesmo keypad ou o mesmo KP7 de um pendente, a árvore vence e o pendente é descartado; o keypad recém-vinculado pela árvore assume o nome do KP7.
 
 ## 8. Nomes
 

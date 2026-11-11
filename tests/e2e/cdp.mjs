@@ -3,7 +3,7 @@
 // Usage: node tests/e2e/cdp.mjs <scenario.js> [url]   (default url: http://localhost:4175/)
 // Chrome path: CHROME_PATH env var, default = Chrome on Windows.
 import { spawn } from 'node:child_process';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as sleep } from 'node:timers/promises';
 import path from 'node:path';
@@ -72,6 +72,16 @@ if (click) {
   await sleep(200);
   const r = await send('Runtime.evaluate', { expression: click.check, returnByValue: true });
   console.log(r.result.result.value);
+}
+
+// Optional screenshot of a region: scenario sets window.__shot = {x, y, width, height};
+// saved only when the SHOT_PATH env var is set (visual comparison with Figma)
+const sh = await send('Runtime.evaluate', { expression: 'JSON.stringify(window.__shot || null)', returnByValue: true });
+const shot = JSON.parse(sh.result.result.value);
+if (shot && process.env.SHOT_PATH) {
+  const r = await send('Page.captureScreenshot', { format: 'png', clip: { ...shot, scale: 2 } });
+  writeFileSync(process.env.SHOT_PATH, Buffer.from(r.result.data, 'base64'));
+  console.log(`INFO  screenshot salvo em ${process.env.SHOT_PATH}`);
 }
 
 ws.close();

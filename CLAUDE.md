@@ -16,6 +16,7 @@ Este projeto é um protótipo do **Scenario Config Embrace**, na tela **Instala�
   3. crie ou ajuste um cenário em `tests/e2e/` e rode `npm run test:e2e`.
 - Mudanças visuais seguem o Figma. Arquivo `OZN66ihMbQnVq04D2kCe4T` (Embrace - Desktop), nodes de referência:
   - Modo Programação: `10153:117594` (o botão "Modo CAD" foi removido de propósito);
+  - menu de ações: `14528:157038` (o botão "Informações do Projeto" da barra de tarefas foi removido de propósito);
   - pop-up CR-KP7-RF: `14348:159567` (texto da tabela em 12px, a pedido do usuário);
   - menu de contexto: `14480:184584` (normal) e `14480:184602` (hover).
 

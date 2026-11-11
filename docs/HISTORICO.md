@@ -105,3 +105,47 @@ Substituída depois pela regra da entrada 9.
 - `CLAUDE.md`, `docs/REGRAS.md` e `docs/HISTORICO.md`;
 - `tests/e2e/`, com o harness CDP, os cenários a–h, `run-all.mjs` e o README;
 - o script `npm run test:e2e`.
+
+---
+
+## 11/11/2026
+
+### 14. Varredura do projeto: correções e limpeza
+**Pedido:** varredura geral do projeto; o usuário aprovou corrigir os bugs, limpar código morto, remover dependências sem uso e trocar os e-mails do Login.
+
+**Correções:**
+- Com a pop-up aberta, vincular, Desvincular ou Desassociar na árvore apagava os vínculos e nomes pendentes na pop-up. Agora a pop-up faz *merge*: mantém o que está pendente, e só descarta o que conflita com a árvore (keypad ou KP7 que a árvore acabou de vincular).
+- "Desvincular" aparecia num KP7 vinculado só na pop-up (pendente) e não fazia nada. Agora o menu só aparece para vínculo concluído; o pendente se desfaz fechando a pop-up.
+- A pop-up podia ser arrastada para fora da tela. Agora parte do cabeçalho (80px na horizontal, 40px na vertical) fica sempre visível.
+
+**Limpeza:**
+- Removidos `src/app/components/ui/` (shadcn, sem uso), `components/figma/ImageWithFallback.tsx` (duplicado), `src/imports/E2Checkbox`, `src/imports/E2TelaEquipamentoEquipamentosScenario` e `findParentRoom` (`App.tsx`).
+- `src/imports/pasted_text/programming-mode.tsx` → `.txt` (era texto colado e quebrava o `tsc`).
+- Removidas todas as dependências sem import (MUI, Emotion, Radix, react-dnd, recharts etc.). Fica só `tw-animate-css`, importada em `tailwind.css`. O CSS do build caiu de 99 kB para 26 kB.
+- `vite.config.ts`: tipo do parâmetro `id`; `npx tsc --noEmit` agora passa sem erros.
+- Rótulo do Login trocado por `usuario@exemplo.com` (havia e-mails reais).
+- Comentário de `getDeviceName` alinhado com REGRAS §8.
+
+**Arquivos:** `App.tsx`, `E2CrKp7Rf.tsx`, `vite.config.ts`, `package.json`, `pnpm-lock.yaml`, `tests/e2e/scenario-i.js` (novo).
+
+**Decisões:** os legados listados no CLAUDE.md continuam (pendência). Desvincular de KP7 pendente: não oferecer o menu, em vez de desfazer o pendente pela árvore.
+
+**Testes:** `scenario-i.js` (I1–I7). Suíte: 62 PASS, 0 FAIL, 2 conhecidas (B8, H3).
+
+### 15. Barra de tarefas e menu de ações (`14528:157038`)
+**Pedido:** remover o botão "Informações do Projeto" da barra de tarefas e seguir o novo layout do menu de ações no Figma.
+
+**O que mudou:**
+- Barra de tarefas começa em "Estrutura". A aba "Informações" (linha de abas) continua.
+- Menu de ações: Modo Programação · Modo Teste · Procurar Redes · Procurar Dispositivos · Atualizar Firmwares │ Zigbee · DALI.
+- Zigbee foi para depois do divisor, **desabilitado** (fundo `#f0f0f0`, opacidade 40%, sem clique).
+- Botão novo **DALI**, sem ação, com o ícone `10736:97982` em 3 camadas (`acao-dali-base/lampada/linha.svg`).
+- "Procurar dispositivos" → "Procurar Dispositivos", como no Figma.
+- Removido o ícone `tarefa-informacoes-do-projeto.svg`, que ficou sem uso.
+- `tests/e2e/cdp.mjs`: captura opcional de uma região (`window.__shot` + variável `SHOT_PATH`), para comparar com o Figma.
+
+**Arquivos:** `App.tsx`, `src/imports/icons/`, `tests/e2e/cdp.mjs`, `tests/e2e/scenario-j.js` (novo).
+
+**Decisões:** a remoção é do botão da barra de tarefas, não da aba. Zigbee só visual (desabilitado); DALI habilitado e sem ação.
+
+**Testes:** `scenario-j.js` (J1–J4, inclusive posições em px do Figma). Suíte: 71 PASS, 0 FAIL, 2 conhecidas (B8, H3).
